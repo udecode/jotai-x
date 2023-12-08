@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@1.6.0/schema.json",
+  "changelog": ["./changelog-config", { "repo": "udecode/jotai-x" }],
+  "commit": false,
+  "linked": [["jotai-x"]],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": []
+}
