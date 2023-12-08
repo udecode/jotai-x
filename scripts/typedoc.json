@@ -11,5 +11,5 @@
   "entryPoints": ["../packages/jotai-x/src/index.ts"],
   "out": "../typedoc",
   "tsconfig": "../packages/jotai-x/tsconfig.json",
-  "readme": "./README.md"
+  "readme": "../README.md"
 }
