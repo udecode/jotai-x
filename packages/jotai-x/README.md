@@ -177,11 +177,11 @@ const App = () => {
   );
 };
 
-// Accessing state from the specified scope. Default scope is the closest one
+// Accessing state from the specified scope.
 const Component = () => {
   // Here, we get the state from the parent scope
   const [name, setName] = useAppStore('parent').use.name();
-  // Here, we get the state from the child scope (default)
+  // Here, we get the state from the closest scope (default)
   const onUpdateName = useAppStore().get.onUpdateName().fn;
 
   return (
