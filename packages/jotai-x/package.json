@@ -39,7 +39,17 @@
     "typecheck": "yarn p:typecheck"
   },
   "peerDependencies": {
-    "jotai": ">=2.0.0"
+    "@types/react": ">=17.0.0",
+    "jotai": ">=2.0.0",
+    "react": ">=17.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
   },
   "keywords": [
     "jotai"
