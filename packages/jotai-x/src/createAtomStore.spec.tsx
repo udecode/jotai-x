@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 
 import React, { ReactNode, useState } from 'react';
 import { act, render, renderHook } from '@testing-library/react';
-import { atom, useAtomValue } from 'jotai';
+import { atom, PrimitiveAtom, useAtomValue } from 'jotai';
 
 import { createAtomStore } from './createAtomStore';
 
@@ -359,6 +359,32 @@ describe('createAtomStore', () => {
       );
 
       expect(getByText('John is 42 years old')).toBeInTheDocument();
+    });
+  });
+
+  describe('custom createAtom function', () => {
+    type CustomAtom<T> = PrimitiveAtom<T> & {
+      isCustomAtom: true;
+    };
+
+    const createCustomAtom = <T,>(value: T): CustomAtom<T> => ({
+      ...atom(value),
+      isCustomAtom: true,
+    });
+
+    const { customStore } = createAtomStore(
+      {
+        x: 5,
+      },
+      {
+        name: 'custom' as const,
+        createAtom: createCustomAtom,
+      }
+    );
+
+    it('uses custom createAtom function', () => {
+      const myAtom = customStore.atom.x as CustomAtom<number>;
+      expect(myAtom.isCustomAtom).toBe(true);
     });
   });
 });

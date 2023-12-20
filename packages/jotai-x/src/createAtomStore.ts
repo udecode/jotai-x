@@ -1,11 +1,11 @@
 import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useHydrateAtoms } from 'jotai/utils';
 
 import { createAtomProvider, useAtomStore } from './createAtomProvider';
 
 import type { ProviderProps } from './createAtomProvider';
 import type { FC } from 'react';
-import type { useHydrateAtoms } from 'jotai/utils';
-import type { Atom, createStore, PrimitiveAtom } from 'jotai/vanilla';
+import type { Atom, createStore, WritableAtom } from 'jotai/vanilla';
 
 export type JotaiStore = ReturnType<typeof createStore>;
 
@@ -28,9 +28,13 @@ export type UseRecord<O> = {
     options?: UseAtomOptionsOrScope
   ) => [O[K], (value: O[K]) => void];
 };
-export type PrimitiveAtomRecord<O> = {
-  [K in keyof O]: PrimitiveAtom<O[K]>;
+
+export type SimpleWritableAtom<T> = WritableAtom<T, [T], void>;
+
+export type WritableAtomRecord<O> = {
+  [K in keyof O]: SimpleWritableAtom<O[K]>;
 };
+
 export type AtomRecord<O> = {
   [K in keyof O]: Atom<O[K]>;
 };
@@ -54,7 +58,7 @@ export type StoreApi<
   E extends AtomRecord<object>,
   N extends string = '',
 > = {
-  atom: PrimitiveAtomRecord<T> & E;
+  atom: WritableAtomRecord<T> & E;
   name: N;
 };
 
@@ -119,7 +123,8 @@ export interface CreateAtomStoreOptions<
   store?: UseAtomOptions['store'];
   delay?: UseAtomOptions['delay'];
   effect?: FC;
-  extend?: (primitiveAtoms: PrimitiveAtomRecord<T>) => E;
+  extend?: (primitiveAtoms: WritableAtomRecord<T>) => E;
+  createAtom?: <V>(value: V) => SimpleWritableAtom<V>;
 }
 
 /**
@@ -140,7 +145,13 @@ export const createAtomStore = <
   N extends string = '',
 >(
   initialState: T,
-  { name, delay: delayRoot, effect, extend }: CreateAtomStoreOptions<T, E, N>
+  {
+    name,
+    delay: delayRoot,
+    effect,
+    extend,
+    createAtom = atom,
+  }: CreateAtomStoreOptions<T, E, N>
 ): AtomStoreApi<T, E, N> => {
   const providerIndex = getProviderIndex(name) as NameProvider<N>;
   const useStoreIndex = getUseStoreIndex(name) as UseNameStore<N>;
@@ -149,10 +160,10 @@ export const createAtomStore = <
   const getAtoms = {} as ReturnType<UseStoreApi<T, E>>['get'];
   const setAtoms = {} as ReturnType<UseStoreApi<T, E>>['set'];
   const useAtoms = {} as ReturnType<UseStoreApi<T, E>>['use'];
-  const primitiveAtoms = {} as PrimitiveAtomRecord<T>;
+  const primitiveAtoms = {} as WritableAtomRecord<T>;
 
   for (const key of Object.keys(initialState)) {
-    const atomConfig = atom(initialState[key as keyof T]);
+    const atomConfig = createAtom(initialState[key as keyof T]);
 
     (primitiveAtoms as any)[key] = atomConfig;
 
@@ -179,7 +190,7 @@ export const createAtomStore = <
   const atoms = {
     ...primitiveAtoms,
     ...(extend ? extend(primitiveAtoms) : {}),
-  } as PrimitiveAtomRecord<T> & E;
+  } as WritableAtomRecord<T> & E;
 
   for (const key of Object.keys(atoms)) {
     const atomConfig = atoms[key as keyof T & keyof E];
