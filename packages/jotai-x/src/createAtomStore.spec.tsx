@@ -2,6 +2,7 @@ import '@testing-library/jest-dom';
 
 import React, { ReactNode, useState } from 'react';
 import { act, render, renderHook } from '@testing-library/react';
+import { atom, useAtomValue } from 'jotai';
 
 import { createAtomStore } from './createAtomStore';
 
@@ -26,8 +27,8 @@ describe('createAtomStore', () => {
     );
 
     const ReadOnlyConsumer = () => {
-      const [name] = useMyTestStoreStore().use.name();
-      const [age] = useMyTestStoreStore().use.age();
+      const name = useMyTestStoreStore().get.name();
+      const age = useMyTestStoreStore().get.age();
 
       return (
         <div>
@@ -170,7 +171,7 @@ describe('createAtomStore', () => {
       });
 
     const ReadOnlyConsumer = ({ scope }: { scope: string }) => {
-      const [age] = useMyScopedTestStoreStore().use.age({ scope });
+      const age = useMyScopedTestStoreStore().get.age({ scope });
 
       return (
         <div>
@@ -184,7 +185,7 @@ describe('createAtomStore', () => {
     }: {
       scope: string;
     }) => {
-      const [age] = useMyScopedTestStoreStore(scope).use.age();
+      const age = useMyScopedTestStoreStore(scope).get.age();
 
       return (
         <div>
@@ -269,7 +270,7 @@ describe('createAtomStore', () => {
       });
 
     const FirstReadOnlyConsumer = () => {
-      const [name] = useMyFirstTestStoreStore().use.name();
+      const name = useMyFirstTestStoreStore().get.name();
 
       return (
         <div>
@@ -279,7 +280,7 @@ describe('createAtomStore', () => {
     };
 
     const SecondReadOnlyConsumer = () => {
-      const [age] = useMySecondTestStoreStore().use.age();
+      const age = useMySecondTestStoreStore().get.age();
 
       return (
         <div>
@@ -300,6 +301,64 @@ describe('createAtomStore', () => {
 
       expect(getByText('Jane')).toBeInTheDocument();
       expect(getByText('98')).toBeInTheDocument();
+    });
+  });
+
+  describe('extended stores', () => {
+    type User = {
+      name: string;
+      age: number;
+    };
+
+    const initialUser: User = {
+      name: 'Jane',
+      age: 98,
+    };
+
+    const { userStore, useUserStore, UserProvider } = createAtomStore(
+      initialUser,
+      {
+        name: 'user' as const,
+        extend: ({ name, age }) => ({
+          bio: atom((get) => `${get(name)} is ${get(age)} years old`),
+        }),
+      }
+    );
+
+    const ReadOnlyConsumer = () => {
+      const bio = useUserStore().get.bio();
+
+      return <div>{bio}</div>;
+    };
+
+    it('includes extended atom in store object', () => {
+      const { result } = renderHook(() => useAtomValue(userStore.atom.bio));
+      expect(result.current).toBe('Jane is 98 years old');
+    });
+
+    it('includes extended atom in get hooks', () => {
+      const { result } = renderHook(() => useUserStore().get.bio());
+      expect(result.current).toBe('Jane is 98 years old');
+    });
+
+    it('does not include extended atom in set hooks', () => {
+      const { result } = renderHook(() => Object.keys(useUserStore().set));
+      expect(result.current).not.toContain('bio');
+    });
+
+    it('does not include extended atom in use hooks', () => {
+      const { result } = renderHook(() => Object.keys(useUserStore().use));
+      expect(result.current).not.toContain('bio');
+    });
+
+    it('computes extended atom based on current state', () => {
+      const { getByText } = render(
+        <UserProvider name="John" age={42}>
+          <ReadOnlyConsumer />
+        </UserProvider>
+      );
+
+      expect(getByText('John is 42 years old')).toBeInTheDocument();
     });
   });
 });
