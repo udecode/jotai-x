@@ -1,8 +1,9 @@
 import '@testing-library/jest-dom';
 
 import React, { ReactNode, useState } from 'react';
-import { act, render, renderHook } from '@testing-library/react';
+import { act, queryByText, render, renderHook } from '@testing-library/react';
 import { atom, PrimitiveAtom, useAtomValue } from 'jotai';
+import { splitAtom } from 'jotai/utils';
 
 import { createAtomStore } from './createAtomStore';
 
@@ -420,6 +421,183 @@ describe('createAtomStore', () => {
       );
 
       expect(getByText('My name is John')).toBeInTheDocument();
+    });
+  });
+
+  describe('splitAtoms using todoStore.atom.items', () => {
+    const initialState = {
+      items: [] as {
+        task: string;
+        done: boolean;
+      }[],
+    };
+
+    const { todoStore, useTodoStore, TodoProvider } = createAtomStore(
+      initialState,
+      {
+        name: 'todo' as const,
+      }
+    );
+
+    const todoAtomsAtom = splitAtom(todoStore.atom.items);
+
+    type TodoType = (typeof initialState)['items'][number];
+
+    const TodoItem = ({
+      todoAtom,
+      remove,
+    }: {
+      todoAtom: PrimitiveAtom<TodoType>;
+      remove: () => void;
+    }) => {
+      const [todo, setTodo] = useTodoStore().use.atom(todoAtom);
+
+      return (
+        <div>
+          <label>{todo.task}</label>
+          <input
+            type="checkbox"
+            checked={todo.done}
+            onChange={() => {
+              setTodo((oldValue) => ({ ...oldValue, done: !oldValue.done }));
+            }}
+          />
+          {/* eslint-disable-next-line react/button-has-type */}
+          <button onClick={remove}>remove {todo.task}</button>
+        </div>
+      );
+    };
+
+    const TodoList = () => {
+      const [todoAtoms, dispatch] = useTodoStore().use.atom(todoAtomsAtom);
+      return (
+        <ul>
+          {todoAtoms.map((todoAtom) => (
+            <TodoItem
+              key={`${todoAtom}`}
+              todoAtom={todoAtom}
+              remove={() => dispatch({ type: 'remove', atom: todoAtom })}
+            />
+          ))}
+        </ul>
+      );
+    };
+
+    it('should work', () => {
+      const { getByText, container } = render(
+        <TodoProvider
+          initialValues={{
+            items: [
+              {
+                task: 'help the town',
+                done: false,
+              },
+              {
+                task: 'feed the dragon',
+                done: false,
+              },
+            ],
+          }}
+        >
+          <TodoList />
+        </TodoProvider>
+      );
+
+      expect(getByText('help the town')).toBeInTheDocument();
+      expect(getByText('feed the dragon')).toBeInTheDocument();
+
+      act(() => getByText('remove help the town').click());
+
+      expect(queryByText(container, 'help the town')).not.toBeInTheDocument();
+      expect(getByText('feed the dragon')).toBeInTheDocument();
+    });
+  });
+
+  describe('splitAtoms using extend', () => {
+    const initialState = {
+      items: [] as {
+        task: string;
+        done: boolean;
+      }[],
+    };
+
+    const { useTodoStore, TodoProvider } = createAtomStore(initialState, {
+      name: 'todo' as const,
+      extend: ({ items }) => ({
+        itemAtoms: splitAtom(items),
+      }),
+    });
+
+    type TodoType = (typeof initialState)['items'][number];
+
+    const TodoItem = ({
+      todoAtom,
+      remove,
+    }: {
+      todoAtom: PrimitiveAtom<TodoType>;
+      remove: () => void;
+    }) => {
+      const [todo, setTodo] = useTodoStore().use.atom(todoAtom);
+
+      return (
+        <div>
+          <label>{todo.task}</label>
+          <input
+            type="checkbox"
+            checked={todo.done}
+            onChange={() => {
+              setTodo((oldValue) => ({ ...oldValue, done: !oldValue.done }));
+            }}
+          />
+          {/* eslint-disable-next-line react/button-has-type */}
+          <button onClick={remove}>remove {todo.task}</button>
+        </div>
+      );
+    };
+
+    const TodoList = () => {
+      const [todoAtoms, dispatch] = useTodoStore().use.itemAtoms();
+
+      return (
+        <ul>
+          {todoAtoms.map((todoAtom) => (
+            <TodoItem
+              key={`${todoAtom}`}
+              todoAtom={todoAtom}
+              remove={() => dispatch({ type: 'remove', atom: todoAtom })}
+            />
+          ))}
+        </ul>
+      );
+    };
+
+    it('should work', () => {
+      const { getByText, container } = render(
+        <TodoProvider
+          initialValues={{
+            items: [
+              {
+                task: 'help the town',
+                done: false,
+              },
+              {
+                task: 'feed the dragon',
+                done: false,
+              },
+            ],
+          }}
+        >
+          <TodoList />
+        </TodoProvider>
+      );
+
+      expect(getByText('help the town')).toBeInTheDocument();
+      expect(getByText('feed the dragon')).toBeInTheDocument();
+
+      act(() => getByText('remove help the town').click());
+
+      expect(queryByText(container, 'help the town')).not.toBeInTheDocument();
+      expect(getByText('feed the dragon')).toBeInTheDocument();
     });
   });
 });

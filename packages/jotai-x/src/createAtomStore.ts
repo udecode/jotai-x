@@ -31,11 +31,23 @@ export type SetRecord<O> = {
   [K in keyof O]: (options?: UseAtomOptionsOrScope) => (value: O[K]) => void;
 };
 
+export type ExtendedSetRecord<O, E> = SetRecord<
+  O & {
+    [key in keyof E]: E[key] extends Atom<infer U> ? U : never;
+  }
+>;
+
 export type UseRecord<O> = {
   [K in keyof O]: (
     options?: UseAtomOptionsOrScope
   ) => [O[K], (value: O[K]) => void];
 };
+
+export type ExtendedUseRecord<O, E> = UseRecord<
+  O & {
+    [key in keyof E]: E[key] extends Atom<infer U> ? U : never;
+  }
+>;
 
 export type SimpleWritableAtom<T> = WritableAtom<T, [T], void>;
 
@@ -84,8 +96,8 @@ type UseAtomFn = <V, A extends unknown[], R>(
 
 export type UseStoreApi<T, E> = (options?: UseAtomOptionsOrScope) => {
   get: ExtendedGetRecord<T, E> & { atom: GetAtomFn };
-  set: SetRecord<T> & { atom: SetAtomFn };
-  use: UseRecord<T> & { atom: UseAtomFn };
+  set: ExtendedSetRecord<T, E> & { atom: SetAtomFn };
+  use: ExtendedUseRecord<T, E> & { atom: UseAtomFn };
   store: (options?: UseAtomOptionsOrScope) => JotaiStore | undefined;
 };
 
@@ -174,8 +186,8 @@ export const createAtomStore = <
   const storeIndex = getStoreIndex(name) as NameStore<N>;
 
   const getAtoms = {} as ExtendedGetRecord<T, E>;
-  const setAtoms = {} as SetRecord<T>;
-  const useAtoms = {} as UseRecord<T>;
+  const setAtoms = {} as ExtendedSetRecord<T, E>;
+  const useAtoms = {} as ExtendedUseRecord<T, E>;
   const primitiveAtoms = {} as WritableAtomRecord<T>;
 
   const useStore = (optionsOrScope: UseAtomOptionsOrScope = {}) => {
@@ -202,15 +214,7 @@ export const createAtomStore = <
   };
 
   for (const key of Object.keys(initialState)) {
-    const atomConfig = createAtom(initialState[key as keyof T]);
-
-    (primitiveAtoms as any)[key] = atomConfig;
-
-    (setAtoms as any)[key] = (optionsOrScope: UseAtomOptionsOrScope = {}) =>
-      useSetAtomWithStore(atomConfig, optionsOrScope);
-
-    (useAtoms as any)[key] = (optionsOrScope: UseAtomOptionsOrScope = {}) =>
-      useAtomWithStore(atomConfig, optionsOrScope);
+    (primitiveAtoms as any)[key] = createAtom(initialState[key as keyof T]);
   }
 
   const atoms = {
@@ -223,6 +227,12 @@ export const createAtomStore = <
 
     (getAtoms as any)[key] = (optionsOrScope: UseAtomOptionsOrScope = {}) =>
       useAtomValueWithStore(atomConfig, optionsOrScope);
+
+    (setAtoms as any)[key] = (optionsOrScope: UseAtomOptionsOrScope = {}) =>
+      useSetAtomWithStore(atomConfig, optionsOrScope);
+
+    (useAtoms as any)[key] = (optionsOrScope: UseAtomOptionsOrScope = {}) =>
+      useAtomWithStore(atomConfig, optionsOrScope);
   }
 
   const Provider: FC<ProviderProps<T>> = createAtomProvider(
