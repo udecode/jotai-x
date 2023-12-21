@@ -23,17 +23,11 @@ type GetRecord<O> = {
     : never;
 };
 
-type ExtendedGetRecord<T, E> = GetRecord<{ [K in keyof T]: Atom<T[K]> } & E>;
-
 type SetRecord<O> = {
   [K in keyof O]: O[K] extends WritableAtom<infer _V, infer A, infer R>
     ? (options?: UseAtomOptionsOrScope) => (...args: A) => R
     : never;
 };
-
-type ExtendedSetRecord<T, E> = SetRecord<
-  { [K in keyof T]: SimpleWritableAtom<T[K]> } & E
->;
 
 type UseRecord<O> = {
   [K in keyof O]: O[K] extends WritableAtom<infer V, infer A, infer R>
@@ -41,14 +35,22 @@ type UseRecord<O> = {
     : never;
 };
 
-type ExtendedUseRecord<T, E> = UseRecord<
-  { [K in keyof T]: SimpleWritableAtom<T[K]> } & E
->;
+type StoreAtomsWithoutExtend<T> = {
+  [K in keyof T]: T[K] extends Atom<any> ? T[K] : SimpleWritableAtom<T[K]>;
+};
+
+type StoreAtoms<T, E> = StoreAtomsWithoutExtend<T> & E;
+
+type FilterWritableAtoms<T> = {
+  [K in keyof T]-?: T[K] extends WritableAtom<any, any, any> ? T[K] : never;
+};
+
+type WritableStoreAtoms<T, E> = FilterWritableAtoms<StoreAtoms<T, E>>;
 
 export type SimpleWritableAtom<T> = WritableAtom<T, [T], void>;
 
-export type WritableAtomRecord<O> = {
-  [K in keyof O]: SimpleWritableAtom<O[K]>;
+export type SimpleWritableAtomRecord<T> = {
+  [K in keyof T]: SimpleWritableAtom<T[K]>;
 };
 
 export type AtomRecord<O> = {
@@ -74,7 +76,7 @@ export type StoreApi<
   E extends AtomRecord<object>,
   N extends string = '',
 > = {
-  atom: WritableAtomRecord<T> & E;
+  atom: StoreAtoms<T, E>;
   name: N;
 };
 
@@ -91,9 +93,9 @@ type UseAtomFn = <V, A extends unknown[], R>(
 ) => [V, (...args: A) => R];
 
 export type UseStoreApi<T, E> = (options?: UseAtomOptionsOrScope) => {
-  get: ExtendedGetRecord<T, E> & { atom: GetAtomFn };
-  set: ExtendedSetRecord<T, E> & { atom: SetAtomFn };
-  use: ExtendedUseRecord<T, E> & { atom: UseAtomFn };
+  get: GetRecord<StoreAtoms<T, E>> & { atom: GetAtomFn };
+  set: SetRecord<WritableStoreAtoms<T, E>> & { atom: SetAtomFn };
+  use: UseRecord<WritableStoreAtoms<T, E>> & { atom: UseAtomFn };
   store: (options?: UseAtomOptionsOrScope) => JotaiStore | undefined;
 };
 
@@ -119,6 +121,12 @@ const getStoreIndex = (name = '') =>
   name.length > 0 ? `${name}Store` : 'store';
 const getUseStoreIndex = (name = '') =>
   `use${capitalizeFirstLetter(name)}Store`;
+
+const isAtom = (possibleAtom: unknown): boolean =>
+  !!possibleAtom &&
+  typeof possibleAtom === 'object' &&
+  'read' in possibleAtom &&
+  typeof possibleAtom.read === 'function';
 
 const withDefaultOptions = <T extends object>(
   fnRecord: T,
@@ -147,8 +155,7 @@ export interface CreateAtomStoreOptions<
   name: N;
   delay?: UseAtomOptions['delay'];
   effect?: FC;
-  extend?: (primitiveAtoms: WritableAtomRecord<T>) => E;
-  createAtom?: <V>(value: V) => SimpleWritableAtom<V>;
+  extend?: (atomsWithoutExtend: StoreAtomsWithoutExtend<T>) => E;
 }
 
 /**
@@ -169,22 +176,53 @@ export const createAtomStore = <
   N extends string = '',
 >(
   initialState: T,
-  {
-    name,
-    delay: delayRoot,
-    effect,
-    extend,
-    createAtom = atom,
-  }: CreateAtomStoreOptions<T, E, N>
+  { name, delay: delayRoot, effect, extend }: CreateAtomStoreOptions<T, E, N>
 ): AtomStoreApi<T, E, N> => {
+  type MyStoreAtoms = StoreAtoms<T, E>;
+  type MyWritableStoreAtoms = WritableStoreAtoms<T, E>;
+  type MyStoreAtomsWithoutExtend = StoreAtomsWithoutExtend<T>;
+  type MyWritableStoreAtomsWithoutExtend =
+    FilterWritableAtoms<MyStoreAtomsWithoutExtend>;
+
   const providerIndex = getProviderIndex(name) as NameProvider<N>;
   const useStoreIndex = getUseStoreIndex(name) as UseNameStore<N>;
   const storeIndex = getStoreIndex(name) as NameStore<N>;
 
-  const getAtoms = {} as ExtendedGetRecord<T, E>;
-  const setAtoms = {} as ExtendedSetRecord<T, E>;
-  const useAtoms = {} as ExtendedUseRecord<T, E>;
-  const primitiveAtoms = {} as WritableAtomRecord<T>;
+  const atomsWithoutExtend = {} as MyStoreAtomsWithoutExtend;
+  const writableAtomsWithoutExtend = {} as MyWritableStoreAtomsWithoutExtend;
+  const atomIsWritable = {} as Record<keyof MyStoreAtoms, boolean>;
+
+  for (const [key, atomOrValue] of Object.entries(initialState)) {
+    const atomConfig: Atom<unknown> = isAtom(atomOrValue)
+      ? atomOrValue
+      : atom(atomOrValue);
+    atomsWithoutExtend[key as keyof MyStoreAtomsWithoutExtend] =
+      atomConfig as any;
+
+    const writable = 'write' in atomConfig;
+    atomIsWritable[key as keyof MyStoreAtoms] = writable;
+
+    if (writable) {
+      writableAtomsWithoutExtend[
+        key as keyof MyWritableStoreAtomsWithoutExtend
+      ] = atomConfig as any;
+    }
+  }
+
+  const atoms = { ...atomsWithoutExtend } as MyStoreAtoms;
+
+  if (extend) {
+    const extendedAtoms = extend(atomsWithoutExtend);
+
+    for (const [key, atomConfig] of Object.entries(extendedAtoms)) {
+      atoms[key as keyof MyStoreAtoms] = atomConfig;
+      atomIsWritable[key as keyof MyStoreAtoms] = 'write' in atomConfig;
+    }
+  }
+
+  const getAtoms = {} as GetRecord<MyStoreAtoms>;
+  const setAtoms = {} as SetRecord<MyWritableStoreAtoms>;
+  const useAtoms = {} as UseRecord<MyWritableStoreAtoms>;
 
   const useStore = (optionsOrScope: UseAtomOptionsOrScope = {}) => {
     const { scope, store } = convertScopeShorthand(optionsOrScope);
@@ -209,31 +247,31 @@ export const createAtomStore = <
     return useAtom(atomConfig, { store, delay });
   };
 
-  for (const key of Object.keys(initialState)) {
-    (primitiveAtoms as any)[key] = createAtom(initialState[key as keyof T]);
-  }
-
-  const atoms = {
-    ...primitiveAtoms,
-    ...(extend ? extend(primitiveAtoms) : {}),
-  } as WritableAtomRecord<T> & E;
-
   for (const key of Object.keys(atoms)) {
-    const atomConfig = atoms[key as keyof T & keyof E];
+    const atomConfig = atoms[key as keyof MyStoreAtoms];
+    const isWritable: boolean = atomIsWritable[key as keyof MyStoreAtoms];
 
     (getAtoms as any)[key] = (optionsOrScope: UseAtomOptionsOrScope = {}) =>
       useAtomValueWithStore(atomConfig, optionsOrScope);
 
-    (setAtoms as any)[key] = (optionsOrScope: UseAtomOptionsOrScope = {}) =>
-      useSetAtomWithStore(atomConfig, optionsOrScope);
+    if (isWritable) {
+      (setAtoms as any)[key] = (optionsOrScope: UseAtomOptionsOrScope = {}) =>
+        useSetAtomWithStore(
+          atomConfig as WritableAtom<any, any, any>,
+          optionsOrScope
+        );
 
-    (useAtoms as any)[key] = (optionsOrScope: UseAtomOptionsOrScope = {}) =>
-      useAtomWithStore(atomConfig, optionsOrScope);
+      (useAtoms as any)[key] = (optionsOrScope: UseAtomOptionsOrScope = {}) =>
+        useAtomWithStore(
+          atomConfig as WritableAtom<any, any, any>,
+          optionsOrScope
+        );
+    }
   }
 
   const Provider: FC<ProviderProps<T>> = createAtomProvider(
     name,
-    primitiveAtoms,
+    writableAtomsWithoutExtend,
     { effect }
   );
 

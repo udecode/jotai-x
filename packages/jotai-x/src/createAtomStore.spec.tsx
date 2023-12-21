@@ -342,14 +342,14 @@ describe('createAtomStore', () => {
       expect(result.current).toBe('Jane is 98 years old');
     });
 
-    it('includes extended atom in set hooks', () => {
+    it('does not include read-only extended atom in set hooks', () => {
       const { result } = renderHook(() => Object.keys(useUserStore().set));
-      expect(result.current).toContain('bio');
+      expect(result.current).not.toContain('bio');
     });
 
-    it('includes extended atom in use hooks', () => {
+    it('does not include read-only extended atom in use hooks', () => {
       const { result } = renderHook(() => Object.keys(useUserStore().use));
-      expect(result.current).toContain('bio');
+      expect(result.current).not.toContain('bio');
     });
 
     it('computes extended atom based on current state', () => {
@@ -363,7 +363,7 @@ describe('createAtomStore', () => {
     });
   });
 
-  describe('custom createAtom function', () => {
+  describe('passing atoms as part of initial state', () => {
     type CustomAtom<T> = PrimitiveAtom<T> & {
       isCustomAtom: true;
     };
@@ -375,15 +375,14 @@ describe('createAtomStore', () => {
 
     const { customStore } = createAtomStore(
       {
-        x: 5,
+        x: createCustomAtom(1),
       },
       {
         name: 'custom' as const,
-        createAtom: createCustomAtom,
       }
     );
 
-    it('uses custom createAtom function', () => {
+    it('uses passed atom', () => {
       const myAtom = customStore.atom.x as CustomAtom<number>;
       expect(myAtom.isCustomAtom).toBe(true);
     });

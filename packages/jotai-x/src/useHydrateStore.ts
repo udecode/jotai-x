@@ -3,16 +3,16 @@ import { useSetAtom } from 'jotai';
 import { useHydrateAtoms } from 'jotai/utils';
 
 import type {
+  SimpleWritableAtomRecord,
   UseHydrateAtoms,
   UseSyncAtoms,
-  WritableAtomRecord,
 } from './createAtomStore';
 
 /**
  * Hydrate atoms with initial values for SSR.
  */
 export const useHydrateStore = (
-  atoms: WritableAtomRecord<any>,
+  atoms: SimpleWritableAtomRecord<any>,
   initialValues: Parameters<UseHydrateAtoms<any>>[0],
   options: Parameters<UseHydrateAtoms<any>>[1] = {}
 ) => {
@@ -38,7 +38,7 @@ export const useHydrateStore = (
  * Update atoms with new values on changes.
  */
 export const useSyncStore = (
-  atoms: WritableAtomRecord<any>,
+  atoms: SimpleWritableAtomRecord<any>,
   values: any,
   { store }: Parameters<UseSyncAtoms<any>>[1] = {}
 ) => {
