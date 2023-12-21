@@ -27,14 +27,9 @@ jobs:
       startsWith(github.event.comment.body, '/release:next')
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Checkout pull request
-        run: hub pr checkout ${{ github.event.issue.number }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup node
         uses: actions/setup-node@v2
