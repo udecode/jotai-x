@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event.issue.pull_request &&
-      contains(['zbeyens', '12joan'], github.event.sender.login) &&
+      contains(fromJSON('["zbeyens", "12joan"]'), github.event.sender.login) &&
       startsWith(github.event.comment.body, '/release:next')
     steps:
       - name: Checkout repo
