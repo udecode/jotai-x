@@ -1,0 +1,69 @@
+# Define actions that run in response to comments on issues and PRs
+# Based on https://github.com/ianstormtaylor/slate/blob/main/.github/workflows/comment.yml
+#
+# Allowed GitHub users: zbeyens, 12joan
+#
+# Supported comments:
+#  - /release:next (PR only) - Publish the branch to NPM with tag 'next'
+
+name: Comment
+
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  release_next:
+    permissions:
+      contents: read # to fetch code (actions/checkout)
+      pull-requests: write # to create or update comment (peter-evans/create-or-update-comment)
+
+    name: release:next
+    runs-on: ubuntu-latest
+    if: |
+      github.event.issue.pull_request &&
+      contains(['zbeyens', '12joan'], github.event.sender.login) &&
+      startsWith(github.event.comment.body, '/release:next')
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Checkout pull request
+        run: hub pr checkout ${{ github.event.issue.number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 20.x
+          cache: yarn
+          registry-url: https://registry.npmjs.org
+          key: node20
+
+      - name: ♻️ Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: 📥 Monorepo install
+        uses: ./.github/actions/yarn-nm-install
+
+      - name: Publish to NPM
+        run: yarn release:next
+        env:
+          # See https://github.com/changesets/action/issues/147
+          HOME: ${{ github.workspace }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create comment
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            A new release has been made for this pull request.
