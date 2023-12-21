@@ -387,4 +387,39 @@ describe('createAtomStore', () => {
       expect(myAtom.isCustomAtom).toBe(true);
     });
   });
+
+  describe('arbitrary atom accessors', () => {
+    type User = {
+      name: string;
+    };
+
+    const initialUser: User = {
+      name: 'Jane',
+    };
+
+    const { userStore, useUserStore, UserProvider } = createAtomStore(
+      initialUser,
+      {
+        name: 'user' as const,
+      }
+    );
+
+    const derivedAtom = atom((get) => `My name is ${get(userStore.atom.name)}`);
+
+    const DerivedAtomConsumer = () => {
+      const message = useUserStore().getAtom(derivedAtom);
+
+      return <div>{message}</div>;
+    };
+
+    it('accesses arbitrary atom within store', () => {
+      const { getByText } = render(
+        <UserProvider name="John">
+          <DerivedAtomConsumer />
+        </UserProvider>
+      );
+
+      expect(getByText('My name is John')).toBeInTheDocument();
+    });
+  });
 });
