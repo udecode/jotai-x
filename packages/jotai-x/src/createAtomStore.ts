@@ -17,14 +17,6 @@ export type UseAtomOptions = {
 
 type UseAtomOptionsOrScope = UseAtomOptions | string;
 
-type SetRecord<O> = {
-  [K in keyof O]: O[K] extends WritableAtom<never, infer A, infer R>
-    ? (options?: UseAtomOptionsOrScope) => (...args: A) => R
-    : never;
-};
-
-type ExtendedSetRecord<T, E> = SetRecord<{ [K in keyof T]: Atom<T[K]> } & E>;
-
 type GetRecord<O> = {
   [K in keyof O]: O[K] extends Atom<infer V>
     ? (options?: UseAtomOptionsOrScope) => V
@@ -33,13 +25,21 @@ type GetRecord<O> = {
 
 type ExtendedGetRecord<T, E> = GetRecord<{ [K in keyof T]: Atom<T[K]> } & E>;
 
+type SetRecord<O> = {
+  [K in keyof O]: O[K] extends WritableAtom<infer _V, infer A, infer R>
+    ? (options?: UseAtomOptionsOrScope) => (...args: A) => R
+    : never;
+};
+
+type ExtendedSetRecord<T, E> = SetRecord<{ [K in keyof T]: SimpleWritableAtom<T[K]> } & E>;
+
 type UseRecord<O> = {
   [K in keyof O]: O[K] extends WritableAtom<infer V, infer A, infer R>
     ? (options?: UseAtomOptionsOrScope) => [V, (...args: A) => R]
     : never;
 };
 
-type ExtendedUseRecord<T, E> = UseRecord<{ [K in keyof T]: Atom<T[K]> } & E>;
+type ExtendedUseRecord<T, E> = UseRecord<{ [K in keyof T]: SimpleWritableAtom<T[K]> } & E>;
 
 export type SimpleWritableAtom<T> = WritableAtom<T, [T], void>;
 
