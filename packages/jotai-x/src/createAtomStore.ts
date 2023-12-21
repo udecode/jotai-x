@@ -31,7 +31,9 @@ type SetRecord<O> = {
     : never;
 };
 
-type ExtendedSetRecord<T, E> = SetRecord<{ [K in keyof T]: SimpleWritableAtom<T[K]> } & E>;
+type ExtendedSetRecord<T, E> = SetRecord<
+  { [K in keyof T]: SimpleWritableAtom<T[K]> } & E
+>;
 
 type UseRecord<O> = {
   [K in keyof O]: O[K] extends WritableAtom<infer V, infer A, infer R>
@@ -39,7 +41,9 @@ type UseRecord<O> = {
     : never;
 };
 
-type ExtendedUseRecord<T, E> = UseRecord<{ [K in keyof T]: SimpleWritableAtom<T[K]> } & E>;
+type ExtendedUseRecord<T, E> = UseRecord<
+  { [K in keyof T]: SimpleWritableAtom<T[K]> } & E
+>;
 
 export type SimpleWritableAtom<T> = WritableAtom<T, [T], void>;
 
