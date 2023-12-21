@@ -48,7 +48,9 @@ jobs:
         uses: ./.github/actions/yarn-nm-install
 
       - name: Publish to NPM
-        run: yarn release:next
+        run: |
+          yarn changeset version --snapshot
+          yarn release:next
         env:
           # See https://github.com/changesets/action/issues/147
           HOME: ${{ github.workspace }}
