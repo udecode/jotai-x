@@ -342,6 +342,16 @@ describe('createAtomStore', () => {
       expect(result.current).toBe('Jane is 98 years old');
     });
 
+    it('includes extended atom in set hooks', () => {
+      const { result } = renderHook(() => Object.keys(useUserStore().set));
+      expect(result.current).toContain('bio');
+    });
+
+    it('includes extended atom in use hooks', () => {
+      const { result } = renderHook(() => Object.keys(useUserStore().use));
+      expect(result.current).toContain('bio');
+    });
+
     it('computes extended atom based on current state', () => {
       const { getByText } = render(
         <UserProvider name="John" age={42}>
