@@ -20,9 +20,17 @@ type UseAtomOptionsOrScope = UseAtomOptions | string;
 export type GetRecord<O> = {
   [K in keyof O]: (options?: UseAtomOptionsOrScope) => O[K];
 };
+
+export type ExtendedGetRecord<O, E> = GetRecord<
+  O & {
+    [key in keyof E]: E[key] extends Atom<infer U> ? U : never;
+  }
+>;
+
 export type SetRecord<O> = {
   [K in keyof O]: (options?: UseAtomOptionsOrScope) => (value: O[K]) => void;
 };
+
 export type UseRecord<O> = {
   [K in keyof O]: (
     options?: UseAtomOptionsOrScope
@@ -75,16 +83,9 @@ type UseAtomFn = <V, A extends unknown[], R>(
 ) => [V, (...args: A) => R];
 
 export type UseStoreApi<T, E> = (options?: UseAtomOptionsOrScope) => {
-  get: GetRecord<
-    T & {
-      [key in keyof E]: E[key] extends Atom<infer U> ? U : never;
-    }
-  >;
-  set: SetRecord<T>;
-  use: UseRecord<T>;
-  getAtom: GetAtomFn;
-  setAtom: SetAtomFn;
-  useAtom: UseAtomFn;
+  get: ExtendedGetRecord<T, E> & { atom: GetAtomFn };
+  set: SetRecord<T> & { atom: SetAtomFn };
+  use: UseRecord<T> & { atom: UseAtomFn };
   store: (options?: UseAtomOptionsOrScope) => JotaiStore | undefined;
 };
 
@@ -172,9 +173,9 @@ export const createAtomStore = <
   const useStoreIndex = getUseStoreIndex(name) as UseNameStore<N>;
   const storeIndex = getStoreIndex(name) as NameStore<N>;
 
-  const getAtoms = {} as ReturnType<UseStoreApi<T, E>>['get'];
-  const setAtoms = {} as ReturnType<UseStoreApi<T, E>>['set'];
-  const useAtoms = {} as ReturnType<UseStoreApi<T, E>>['use'];
+  const getAtoms = {} as ExtendedGetRecord<T, E>;
+  const setAtoms = {} as SetRecord<T>;
+  const useAtoms = {} as UseRecord<T>;
   const primitiveAtoms = {} as WritableAtomRecord<T>;
 
   const useStore = (optionsOrScope: UseAtomOptionsOrScope = {}) => {
@@ -236,24 +237,30 @@ export const createAtomStore = <
   };
 
   const useStoreApi: UseStoreApi<T, E> = (defaultOptions = {}) => ({
-    get: withDefaultOptions(getAtoms, convertScopeShorthand(defaultOptions)),
-    set: withDefaultOptions(setAtoms, convertScopeShorthand(defaultOptions)),
-    use: withDefaultOptions(useAtoms, convertScopeShorthand(defaultOptions)),
-    getAtom: (atomConfig, options) =>
-      useAtomValueWithStore(atomConfig, {
-        ...convertScopeShorthand(defaultOptions),
-        ...convertScopeShorthand(options),
-      }),
-    setAtom: (atomConfig, options) =>
-      useSetAtomWithStore(atomConfig, {
-        ...convertScopeShorthand(defaultOptions),
-        ...convertScopeShorthand(options),
-      }),
-    useAtom: (atomConfig, options) =>
-      useAtomWithStore(atomConfig, {
-        ...convertScopeShorthand(defaultOptions),
-        ...convertScopeShorthand(options),
-      }),
+    get: {
+      ...withDefaultOptions(getAtoms, convertScopeShorthand(defaultOptions)),
+      atom: (atomConfig, options) =>
+        useAtomValueWithStore(atomConfig, {
+          ...convertScopeShorthand(defaultOptions),
+          ...convertScopeShorthand(options),
+        }),
+    },
+    set: {
+      ...withDefaultOptions(setAtoms, convertScopeShorthand(defaultOptions)),
+      atom: (atomConfig, options) =>
+        useSetAtomWithStore(atomConfig, {
+          ...convertScopeShorthand(defaultOptions),
+          ...convertScopeShorthand(options),
+        }),
+    },
+    use: {
+      ...withDefaultOptions(useAtoms, convertScopeShorthand(defaultOptions)),
+      atom: (atomConfig, options) =>
+        useAtomWithStore(atomConfig, {
+          ...convertScopeShorthand(defaultOptions),
+          ...convertScopeShorthand(options),
+        }),
+    },
     store: (options) =>
       useStore({
         ...convertScopeShorthand(defaultOptions),

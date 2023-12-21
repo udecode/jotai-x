@@ -407,7 +407,7 @@ describe('createAtomStore', () => {
     const derivedAtom = atom((get) => `My name is ${get(userStore.atom.name)}`);
 
     const DerivedAtomConsumer = () => {
-      const message = useUserStore().getAtom(derivedAtom);
+      const message = useUserStore().get.atom(derivedAtom);
 
       return <div>{message}</div>;
     };
