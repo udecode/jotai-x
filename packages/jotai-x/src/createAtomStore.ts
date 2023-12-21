@@ -224,14 +224,17 @@ export const createAtomStore = <
   const setAtoms = {} as SetRecord<MyWritableStoreAtoms>;
   const useAtoms = {} as UseRecord<MyWritableStoreAtoms>;
 
-  const useStore = (optionsOrScope: UseAtomOptionsOrScope = {}) => {
+  const useStore = (
+    optionsOrScope: UseAtomOptionsOrScope = {},
+    warnIfUndefined = true
+  ) => {
     const { scope, store } = convertScopeShorthand(optionsOrScope);
-    const contextStore = useAtomStore(name, scope);
+    const contextStore = useAtomStore(name, scope, warnIfUndefined);
     return store ?? contextStore;
   };
 
   const useAtomValueWithStore: GetAtomFn = (atomConfig, optionsOrScope) => {
-    const store = useStore(optionsOrScope);
+    const store = useStore(optionsOrScope, false);
     const { delay = delayRoot } = convertScopeShorthand(optionsOrScope);
     return useAtomValue(atomConfig, { store, delay });
   };
