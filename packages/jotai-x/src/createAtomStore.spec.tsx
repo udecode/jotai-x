@@ -12,6 +12,7 @@ describe('createAtomStore', () => {
     type MyTestStoreValue = {
       name: string;
       age: number;
+      becomeFriends: () => void;
     };
 
     const INITIAL_NAME = 'John';
@@ -20,12 +21,11 @@ describe('createAtomStore', () => {
     const initialTestStoreValue: MyTestStoreValue = {
       name: INITIAL_NAME,
       age: INITIAL_AGE,
+      becomeFriends: () => {},
     };
 
-    const { useMyTestStoreStore, MyTestStoreProvider } = createAtomStore(
-      initialTestStoreValue,
-      { name: 'myTestStore' as const }
-    );
+    const { myTestStoreStore, useMyTestStoreStore, MyTestStoreProvider } =
+      createAtomStore(initialTestStoreValue, { name: 'myTestStore' as const });
 
     const ReadOnlyConsumer = () => {
       const name = useMyTestStoreStore().get.name();
@@ -67,6 +67,76 @@ describe('createAtomStore', () => {
           >
             providerSetAge
           </button>
+        </>
+      );
+    };
+
+    const BecomeFriendsProvider = ({ children }: { children: ReactNode }) => {
+      const [becameFriends, setBecameFriends] = useState(false);
+
+      return (
+        <>
+          <MyTestStoreProvider becomeFriends={() => setBecameFriends(true)}>
+            {children}
+          </MyTestStoreProvider>
+
+          <div>becameFriends: {becameFriends.toString()}</div>
+        </>
+      );
+    };
+
+    const BecomeFriendsGetter = () => {
+      // Make sure both of these are actual functions, not wrapped functions
+      const becomeFriends1 = useMyTestStoreStore().get.becomeFriends();
+      const becomeFriends2 = useMyTestStoreStore().get.atom(
+        myTestStoreStore.atom.becomeFriends
+      );
+
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            becomeFriends1();
+            becomeFriends2();
+          }}
+        >
+          Become Friends
+        </button>
+      );
+    };
+
+    const BecomeFriendsSetter = () => {
+      const setBecomeFriends = useMyTestStoreStore().set.becomeFriends();
+      const [becameFriends, setBecameFriends] = useState(false);
+
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => setBecomeFriends(() => setBecameFriends(true))}
+          >
+            Change Callback
+          </button>
+
+          <div>setterBecameFriends: {becameFriends.toString()}</div>
+        </>
+      );
+    };
+
+    const BecomeFriendsUser = () => {
+      const [, setBecomeFriends] = useMyTestStoreStore().use.becomeFriends();
+      const [becameFriends, setBecameFriends] = useState(false);
+
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => setBecomeFriends(() => setBecameFriends(true))}
+          >
+            Change Callback
+          </button>
+
+          <div>userBecameFriends: {becameFriends.toString()}</div>
         </>
       );
     };
@@ -156,6 +226,46 @@ describe('createAtomStore', () => {
 
       expect(getByText(INITIAL_NAME)).toBeInTheDocument();
       expect(getByText(WRITE_ONLY_CONSUMER_AGE)).toBeInTheDocument();
+    });
+
+    it('provides and gets functions', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsGetter />
+        </BecomeFriendsProvider>
+      );
+
+      expect(getByText('becameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('becameFriends: true')).toBeInTheDocument();
+    });
+
+    it('sets functions', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsSetter />
+          <BecomeFriendsGetter />
+        </BecomeFriendsProvider>
+      );
+
+      act(() => getByText('Change Callback').click());
+      expect(getByText('setterBecameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('setterBecameFriends: true')).toBeInTheDocument();
+    });
+
+    it('uses functions', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsUser />
+          <BecomeFriendsGetter />
+        </BecomeFriendsProvider>
+      );
+
+      act(() => getByText('Change Callback').click());
+      expect(getByText('userBecameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('userBecameFriends: true')).toBeInTheDocument();
     });
   });
 

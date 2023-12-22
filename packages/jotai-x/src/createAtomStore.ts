@@ -17,6 +17,30 @@ export type UseAtomOptions = {
 
 type UseAtomOptionsOrScope = UseAtomOptions | string;
 
+// Jotai does not support functions in atoms, so wrap functions in objects
+type WrapFn<T> = T extends (...args: infer _A) => infer _R ? { __fn: T } : T;
+
+const wrapFn = <T>(fnOrValue: T): WrapFn<T> =>
+  (typeof fnOrValue === 'function' ? { __fn: fnOrValue } : fnOrValue) as any;
+
+type UnwrapFn<T> = T extends { __fn: infer U } ? U : T;
+
+const unwrapFn = <T>(wrappedFnOrValue: T): UnwrapFn<T> =>
+  (wrappedFnOrValue &&
+  typeof wrappedFnOrValue === 'object' &&
+  '__fn' in wrappedFnOrValue
+    ? wrappedFnOrValue.__fn
+    : wrappedFnOrValue) as any;
+
+const atomWithFn = <T>(initialValue: T): SimpleWritableAtom<T> => {
+  const baseAtom = atom(wrapFn(initialValue));
+
+  return atom(
+    (get) => unwrapFn(get(baseAtom)) as T,
+    (_get, set, value) => set(baseAtom, wrapFn(value))
+  );
+};
+
 type GetRecord<O> = {
   [K in keyof O]: O[K] extends Atom<infer V>
     ? (options?: UseAtomOptionsOrScope) => V
@@ -195,7 +219,7 @@ export const createAtomStore = <
   for (const [key, atomOrValue] of Object.entries(initialState)) {
     const atomConfig: Atom<unknown> = isAtom(atomOrValue)
       ? atomOrValue
-      : atom(atomOrValue);
+      : atomWithFn(atomOrValue);
     atomsWithoutExtend[key as keyof MyStoreAtomsWithoutExtend] =
       atomConfig as any;
 
