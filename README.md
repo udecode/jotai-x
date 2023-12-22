@@ -128,9 +128,7 @@ import { createAtomStore } from 'jotai-x';
 
 export type AppStore = {
   name: string;
-  
-  // Functions: Jotai atoms do not support functions so we need to use an object here. 
-  onUpdateName: { fn: (name: string) => void };
+  onUpdateName: (name: string) => void;
 };
 
 const initialState: Nullable<AppStore> = {
@@ -153,7 +151,7 @@ const App = () => {
   return (
     <AppProvider 
       initialValues={{
-        onUpdateName: { fn: (name: string) => console.log(name) }
+        onUpdateName: (name: string) => console.log(name)
       }}
       // Either here or in initialValues
       name="John Doe"
@@ -165,7 +163,7 @@ const App = () => {
 
 const Component = () => {
   const [name, setName] = useAppStore().use.name();
-  const onUpdateName = useAppStore().get.onUpdateName().fn;
+  const onUpdateName = useAppStore().get.onUpdateName();
   
   return (
     <div>
@@ -185,7 +183,7 @@ const App = () => {
     <AppProvider 
       scope="parent"
       initialValues={{
-        onUpdateName: { fn: (name: string) => console.log("Parent:", name) }
+        onUpdateName: (name: string) => console.log("Parent:", name)
       }}
       name="Parent User"
     >
@@ -196,7 +194,7 @@ const App = () => {
         <AppProvider 
           scope="child"
           initialValues={{
-            onUpdateName: { fn: (name: string) => console.log("Child:", name) }
+            onUpdateName: (name: string) => console.log("Child:", name)
           }}
           name="Child User"
         >
@@ -215,7 +213,7 @@ const Component = () => {
   // Here, we get the state from the parent scope
   const [name, setName] = useAppStore('parent').use.name();
   // Here, we get the state from the closest scope (default)
-  const onUpdateName = useAppStore().get.onUpdateName().fn;
+  const onUpdateName = useAppStore().get.onUpdateName();
 
   return (
     <div>
