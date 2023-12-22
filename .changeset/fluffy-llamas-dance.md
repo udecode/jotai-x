@@ -1,5 +1,5 @@
 ---
-'jotai-x': major
+'jotai-x': minor
 ---
 
 - Atoms can now be passed in the `initialState` argument to `createAtomStore`
