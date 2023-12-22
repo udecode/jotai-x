@@ -228,11 +228,6 @@ const Component = () => {
 
 ## Contributing
 
-### Roadmap
-
-- [ ] Support other atoms like `atomWithStorage`
-- [ ] Improve `extend` API to be more modular.
-
 ### Ideas and discussions
 
 [Discussions](https://github.com/udecode/jotai-x/discussions) is the best
