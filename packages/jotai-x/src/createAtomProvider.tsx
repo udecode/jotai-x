@@ -9,7 +9,7 @@ import React, {
 import { createStore } from 'jotai/vanilla';
 
 import { AtomProvider, AtomProviderProps } from './atomProvider';
-import { AtomRecord, JotaiStore } from './createAtomStore';
+import { JotaiStore, SimpleWritableAtomRecord } from './createAtomStore';
 import { useHydrateStore, useSyncStore } from './useHydrateStore';
 
 const getFullyQualifiedScope = (storeName: string, scope: string) => {
@@ -62,7 +62,7 @@ export const HydrateAtoms = <T extends object>({
   atoms,
   ...props
 }: Omit<ProviderProps<T>, 'scope'> & {
-  atoms: AtomRecord<T>;
+  atoms: SimpleWritableAtomRecord<T>;
 }) => {
   useHydrateStore(atoms, { ...initialValues, ...props } as any, {
     store,
@@ -81,7 +81,7 @@ export const HydrateAtoms = <T extends object>({
  */
 export const createAtomProvider = <T extends object, N extends string = ''>(
   storeScope: N,
-  atoms: AtomRecord<T>,
+  atoms: SimpleWritableAtomRecord<T>,
   options: { effect?: FC } = {}
 ) => {
   const Effect = options.effect;

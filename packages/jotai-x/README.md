@@ -54,26 +54,25 @@ createAtomStore<T extends object>(initialState: T, options?: CreateAtomStoreOpti
 The **`options`** object can include several properties to customize the behavior of your store:
 
 - **`name`**: A string representing the name of the store, which can be helpful for debugging or when working with multiple stores.
-- **`store`**: Allows specifying a [Jotai store](https://jotai.org/docs/core/store) if you want to use a custom one. Optional.
 - **`delay`**: If you need to introduce a delay in state updates, you can specify it here. Optional.
 - **`effect`**: A React component that can be used to run effects inside the provider. Optional.
+- **`extend`**: Extend the store with derived atoms based on the store state. Optional.
 
 #### Return Value
 
 The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) containing the following properties and methods for interacting with the store:
 
 - **`use<Name>Store`**: 
-  - A function that returns the following objects: **`get`**, **`set`**, and **`use`**, where values are hooks for each state defined in the store. 
+  - A function that returns the following objects: **`get`**, **`set`**, **`use`** and **`store`**, where values are hooks for each state defined in the store.
   - **`get`**: Hooks for accessing a state within a component,  ensuring re-rendering when the state changes. See [useAtomValue](https://jotai.org/docs/core/use-atom#useatomvalue).
   - **`set`**: Hooks for setting a state within a component. See [useSetAtom](https://jotai.org/docs/core/use-atom#usesetatom).
   - **`use`**: Hooks for accessing and setting a state within a component, ensuring re-rendering when the state changes. See [useAtom](https://jotai.org/docs/core/use-atom).
+  - **`store`**: A hook to access the [JotaiStore](https://jotai.org/docs/core/store) for the current context.
   - Example: `const [element, setElement] = useElementStore().use.element()`
 - **`<Name>Provider`**:
   - The API includes dynamically generated provider components for each defined store. This allows  scoped state management within your application. More information in the next section.
 - **`<name>Store`**:
-  - Advanced API you generally don't need.
-  - **`atom`**: A hook for accessing state within a component,  ensuring re-rendering when the state changes. See [atom](https://jotai.org/docs/core/atom).
-  - **`extend`**: Extends the store with additional atoms. 
+  - **`atom`**: Access the atoms used by the store, including derived atoms defined using `extend`. See [atom](https://jotai.org/docs/core/atom).
   
 ### **Provider-Based Store Hydration and Synchronization**
 
@@ -85,6 +84,40 @@ The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) contai
 ### Scoped Providers and Context Management
 
 JotaiX creates scoped providers, enabling more granular control over different segments of state within your application. `createAtomStore` sets up a context for each store, which can be scoped using the **`scope`** prop. This is particularly beneficial in complex applications where nested providers are needed.
+
+### Derived Atoms
+
+There are two ways of creating derived atoms from your JotaiX store.
+
+#### Derived Atoms Using `extend`
+
+Atoms defined using the `extend` option are made available in the same places as other values in the store.
+
+```ts
+const { useUserStore } = createAtomStore({
+  username: 'Alice',
+}, {
+  name: 'user',
+  extend: (atoms) => ({
+    intro: atom((get) => `My name is ${get(atoms.username)}`),
+  }),
+});
+
+const intro = useAppStore().get.intro();
+```
+
+#### Externally Defined Derived Atoms
+
+Derived atoms can also be defined externally by accessing the store's atoms through the `<name>Store` API. Externally defined atoms can be accessed through the store using the special `use<Name>Store().{get,set,use}.atom` hooks.
+
+```ts
+const { userStore, useUserStore } = createAtomStore({
+  username: 'Alice',
+}, { name: 'user' });
+
+const introAtom = atom((get) => `My name is ${get(userStore.atom.username)}`);
+const intro = useUserStore().get.atom(introAtom);
+```
 
 ### Example Usage
 
@@ -194,11 +227,6 @@ const Component = () => {
 ```
 
 ## Contributing
-
-### Roadmap
-
-- [ ] Support other atoms like `atomWithStorage`
-- [ ] Improve `extend` API to be more modular.
 
 ### Ideas and discussions
 

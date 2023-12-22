@@ -1,7 +1,9 @@
 import '@testing-library/jest-dom';
 
 import React, { ReactNode, useState } from 'react';
-import { act, render, renderHook } from '@testing-library/react';
+import { act, queryByText, render, renderHook } from '@testing-library/react';
+import { atom, PrimitiveAtom, useAtomValue } from 'jotai';
+import { splitAtom } from 'jotai/utils';
 
 import { createAtomStore } from './createAtomStore';
 
@@ -10,6 +12,7 @@ describe('createAtomStore', () => {
     type MyTestStoreValue = {
       name: string;
       age: number;
+      becomeFriends: () => void;
     };
 
     const INITIAL_NAME = 'John';
@@ -18,16 +21,15 @@ describe('createAtomStore', () => {
     const initialTestStoreValue: MyTestStoreValue = {
       name: INITIAL_NAME,
       age: INITIAL_AGE,
+      becomeFriends: () => {},
     };
 
-    const { useMyTestStoreStore, MyTestStoreProvider } = createAtomStore(
-      initialTestStoreValue,
-      { name: 'myTestStore' as const }
-    );
+    const { myTestStoreStore, useMyTestStoreStore, MyTestStoreProvider } =
+      createAtomStore(initialTestStoreValue, { name: 'myTestStore' as const });
 
     const ReadOnlyConsumer = () => {
-      const [name] = useMyTestStoreStore().use.name();
-      const [age] = useMyTestStoreStore().use.age();
+      const name = useMyTestStoreStore().get.name();
+      const age = useMyTestStoreStore().get.age();
 
       return (
         <div>
@@ -65,6 +67,76 @@ describe('createAtomStore', () => {
           >
             providerSetAge
           </button>
+        </>
+      );
+    };
+
+    const BecomeFriendsProvider = ({ children }: { children: ReactNode }) => {
+      const [becameFriends, setBecameFriends] = useState(false);
+
+      return (
+        <>
+          <MyTestStoreProvider becomeFriends={() => setBecameFriends(true)}>
+            {children}
+          </MyTestStoreProvider>
+
+          <div>becameFriends: {becameFriends.toString()}</div>
+        </>
+      );
+    };
+
+    const BecomeFriendsGetter = () => {
+      // Make sure both of these are actual functions, not wrapped functions
+      const becomeFriends1 = useMyTestStoreStore().get.becomeFriends();
+      const becomeFriends2 = useMyTestStoreStore().get.atom(
+        myTestStoreStore.atom.becomeFriends
+      );
+
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            becomeFriends1();
+            becomeFriends2();
+          }}
+        >
+          Become Friends
+        </button>
+      );
+    };
+
+    const BecomeFriendsSetter = () => {
+      const setBecomeFriends = useMyTestStoreStore().set.becomeFriends();
+      const [becameFriends, setBecameFriends] = useState(false);
+
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => setBecomeFriends(() => setBecameFriends(true))}
+          >
+            Change Callback
+          </button>
+
+          <div>setterBecameFriends: {becameFriends.toString()}</div>
+        </>
+      );
+    };
+
+    const BecomeFriendsUser = () => {
+      const [, setBecomeFriends] = useMyTestStoreStore().use.becomeFriends();
+      const [becameFriends, setBecameFriends] = useState(false);
+
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => setBecomeFriends(() => setBecameFriends(true))}
+          >
+            Change Callback
+          </button>
+
+          <div>userBecameFriends: {becameFriends.toString()}</div>
         </>
       );
     };
@@ -155,6 +227,46 @@ describe('createAtomStore', () => {
       expect(getByText(INITIAL_NAME)).toBeInTheDocument();
       expect(getByText(WRITE_ONLY_CONSUMER_AGE)).toBeInTheDocument();
     });
+
+    it('provides and gets functions', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsGetter />
+        </BecomeFriendsProvider>
+      );
+
+      expect(getByText('becameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('becameFriends: true')).toBeInTheDocument();
+    });
+
+    it('sets functions', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsSetter />
+          <BecomeFriendsGetter />
+        </BecomeFriendsProvider>
+      );
+
+      act(() => getByText('Change Callback').click());
+      expect(getByText('setterBecameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('setterBecameFriends: true')).toBeInTheDocument();
+    });
+
+    it('uses functions', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsUser />
+          <BecomeFriendsGetter />
+        </BecomeFriendsProvider>
+      );
+
+      act(() => getByText('Change Callback').click());
+      expect(getByText('userBecameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('userBecameFriends: true')).toBeInTheDocument();
+    });
   });
 
   describe('scoped providers', () => {
@@ -170,7 +282,7 @@ describe('createAtomStore', () => {
       });
 
     const ReadOnlyConsumer = ({ scope }: { scope: string }) => {
-      const [age] = useMyScopedTestStoreStore().use.age({ scope });
+      const age = useMyScopedTestStoreStore().get.age({ scope });
 
       return (
         <div>
@@ -184,7 +296,7 @@ describe('createAtomStore', () => {
     }: {
       scope: string;
     }) => {
-      const [age] = useMyScopedTestStoreStore(scope).use.age();
+      const age = useMyScopedTestStoreStore(scope).get.age();
 
       return (
         <div>
@@ -269,7 +381,7 @@ describe('createAtomStore', () => {
       });
 
     const FirstReadOnlyConsumer = () => {
-      const [name] = useMyFirstTestStoreStore().use.name();
+      const name = useMyFirstTestStoreStore().get.name();
 
       return (
         <div>
@@ -279,7 +391,7 @@ describe('createAtomStore', () => {
     };
 
     const SecondReadOnlyConsumer = () => {
-      const [age] = useMySecondTestStoreStore().use.age();
+      const age = useMySecondTestStoreStore().get.age();
 
       return (
         <div>
@@ -300,6 +412,301 @@ describe('createAtomStore', () => {
 
       expect(getByText('Jane')).toBeInTheDocument();
       expect(getByText('98')).toBeInTheDocument();
+    });
+  });
+
+  describe('extended stores', () => {
+    type User = {
+      name: string;
+      age: number;
+    };
+
+    const initialUser: User = {
+      name: 'Jane',
+      age: 98,
+    };
+
+    const { userStore, useUserStore, UserProvider } = createAtomStore(
+      initialUser,
+      {
+        name: 'user' as const,
+        extend: ({ name, age }) => ({
+          bio: atom((get) => `${get(name)} is ${get(age)} years old`),
+        }),
+      }
+    );
+
+    const ReadOnlyConsumer = () => {
+      const bio = useUserStore().get.bio();
+
+      return <div>{bio}</div>;
+    };
+
+    it('includes extended atom in store object', () => {
+      const { result } = renderHook(() => useAtomValue(userStore.atom.bio));
+      expect(result.current).toBe('Jane is 98 years old');
+    });
+
+    it('includes extended atom in get hooks', () => {
+      const { result } = renderHook(() => useUserStore().get.bio());
+      expect(result.current).toBe('Jane is 98 years old');
+    });
+
+    it('does not include read-only extended atom in set hooks', () => {
+      const { result } = renderHook(() => Object.keys(useUserStore().set));
+      expect(result.current).not.toContain('bio');
+    });
+
+    it('does not include read-only extended atom in use hooks', () => {
+      const { result } = renderHook(() => Object.keys(useUserStore().use));
+      expect(result.current).not.toContain('bio');
+    });
+
+    it('computes extended atom based on current state', () => {
+      const { getByText } = render(
+        <UserProvider name="John" age={42}>
+          <ReadOnlyConsumer />
+        </UserProvider>
+      );
+
+      expect(getByText('John is 42 years old')).toBeInTheDocument();
+    });
+  });
+
+  describe('passing atoms as part of initial state', () => {
+    type CustomAtom<T> = PrimitiveAtom<T> & {
+      isCustomAtom: true;
+    };
+
+    const createCustomAtom = <T,>(value: T): CustomAtom<T> => ({
+      ...atom(value),
+      isCustomAtom: true,
+    });
+
+    const { customStore } = createAtomStore(
+      {
+        x: createCustomAtom(1),
+      },
+      {
+        name: 'custom' as const,
+      }
+    );
+
+    it('uses passed atom', () => {
+      const myAtom = customStore.atom.x as CustomAtom<number>;
+      expect(myAtom.isCustomAtom).toBe(true);
+    });
+  });
+
+  describe('arbitrary atom accessors', () => {
+    type User = {
+      name: string;
+    };
+
+    const initialUser: User = {
+      name: 'Jane',
+    };
+
+    const { userStore, useUserStore, UserProvider } = createAtomStore(
+      initialUser,
+      {
+        name: 'user' as const,
+      }
+    );
+
+    const derivedAtom = atom((get) => `My name is ${get(userStore.atom.name)}`);
+
+    const DerivedAtomConsumer = () => {
+      const message = useUserStore().get.atom(derivedAtom);
+
+      return <div>{message}</div>;
+    };
+
+    it('accesses arbitrary atom within store', () => {
+      const { getByText } = render(
+        <UserProvider name="John">
+          <DerivedAtomConsumer />
+        </UserProvider>
+      );
+
+      expect(getByText('My name is John')).toBeInTheDocument();
+    });
+  });
+
+  describe('splitAtoms using todoStore.atom.items', () => {
+    const initialState = {
+      items: [] as {
+        task: string;
+        done: boolean;
+      }[],
+    };
+
+    const { todoStore, useTodoStore, TodoProvider } = createAtomStore(
+      initialState,
+      {
+        name: 'todo' as const,
+      }
+    );
+
+    const todoAtomsAtom = splitAtom(todoStore.atom.items);
+
+    type TodoType = (typeof initialState)['items'][number];
+
+    const TodoItem = ({
+      todoAtom,
+      remove,
+    }: {
+      todoAtom: PrimitiveAtom<TodoType>;
+      remove: () => void;
+    }) => {
+      const [todo, setTodo] = useTodoStore().use.atom(todoAtom);
+
+      return (
+        <div>
+          <label>{todo.task}</label>
+          <input
+            type="checkbox"
+            checked={todo.done}
+            onChange={() => {
+              setTodo((oldValue) => ({ ...oldValue, done: !oldValue.done }));
+            }}
+          />
+          {/* eslint-disable-next-line react/button-has-type */}
+          <button onClick={remove}>remove {todo.task}</button>
+        </div>
+      );
+    };
+
+    const TodoList = () => {
+      const [todoAtoms, dispatch] = useTodoStore().use.atom(todoAtomsAtom);
+      return (
+        <ul>
+          {todoAtoms.map((todoAtom) => (
+            <TodoItem
+              key={`${todoAtom}`}
+              todoAtom={todoAtom}
+              remove={() => dispatch({ type: 'remove', atom: todoAtom })}
+            />
+          ))}
+        </ul>
+      );
+    };
+
+    it('should work', () => {
+      const { getByText, container } = render(
+        <TodoProvider
+          initialValues={{
+            items: [
+              {
+                task: 'help the town',
+                done: false,
+              },
+              {
+                task: 'feed the dragon',
+                done: false,
+              },
+            ],
+          }}
+        >
+          <TodoList />
+        </TodoProvider>
+      );
+
+      expect(getByText('help the town')).toBeInTheDocument();
+      expect(getByText('feed the dragon')).toBeInTheDocument();
+
+      act(() => getByText('remove help the town').click());
+
+      expect(queryByText(container, 'help the town')).not.toBeInTheDocument();
+      expect(getByText('feed the dragon')).toBeInTheDocument();
+    });
+  });
+
+  describe('splitAtoms using extend', () => {
+    const initialState = {
+      items: [] as {
+        task: string;
+        done: boolean;
+      }[],
+    };
+
+    const { useTodoStore, TodoProvider } = createAtomStore(initialState, {
+      name: 'todo' as const,
+      extend: ({ items }) => ({
+        itemAtoms: splitAtom(items),
+      }),
+    });
+
+    type TodoType = (typeof initialState)['items'][number];
+
+    const TodoItem = ({
+      todoAtom,
+      remove,
+    }: {
+      todoAtom: PrimitiveAtom<TodoType>;
+      remove: () => void;
+    }) => {
+      const [todo, setTodo] = useTodoStore().use.atom(todoAtom);
+
+      return (
+        <div>
+          <label>{todo.task}</label>
+          <input
+            type="checkbox"
+            checked={todo.done}
+            onChange={() => {
+              setTodo((oldValue) => ({ ...oldValue, done: !oldValue.done }));
+            }}
+          />
+          {/* eslint-disable-next-line react/button-has-type */}
+          <button onClick={remove}>remove {todo.task}</button>
+        </div>
+      );
+    };
+
+    const TodoList = () => {
+      const [todoAtoms, dispatch] = useTodoStore().use.itemAtoms();
+
+      return (
+        <ul>
+          {todoAtoms.map((todoAtom) => (
+            <TodoItem
+              key={`${todoAtom}`}
+              todoAtom={todoAtom}
+              remove={() => dispatch({ type: 'remove', atom: todoAtom })}
+            />
+          ))}
+        </ul>
+      );
+    };
+
+    it('should work', () => {
+      const { getByText, container } = render(
+        <TodoProvider
+          initialValues={{
+            items: [
+              {
+                task: 'help the town',
+                done: false,
+              },
+              {
+                task: 'feed the dragon',
+                done: false,
+              },
+            ],
+          }}
+        >
+          <TodoList />
+        </TodoProvider>
+      );
+
+      expect(getByText('help the town')).toBeInTheDocument();
+      expect(getByText('feed the dragon')).toBeInTheDocument();
+
+      act(() => getByText('remove help the town').click());
+
+      expect(queryByText(container, 'help the town')).not.toBeInTheDocument();
+      expect(getByText('feed the dragon')).toBeInTheDocument();
     });
   });
 });

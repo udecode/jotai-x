@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import { useSetAtom } from 'jotai';
 import { useHydrateAtoms } from 'jotai/utils';
 
-import type {
-  AtomRecord,
+import {
+  SimpleWritableAtomRecord,
   UseHydrateAtoms,
   UseSyncAtoms,
 } from './createAtomStore';
@@ -12,7 +12,7 @@ import type {
  * Hydrate atoms with initial values for SSR.
  */
 export const useHydrateStore = (
-  atoms: AtomRecord<any>,
+  atoms: SimpleWritableAtomRecord<any>,
   initialValues: Parameters<UseHydrateAtoms<any>>[0],
   options: Parameters<UseHydrateAtoms<any>>[1] = {}
 ) => {
@@ -22,12 +22,7 @@ export const useHydrateStore = (
     const initialValue = initialValues[key];
 
     if (initialValue !== undefined) {
-      values.push([
-        atoms[key],
-        typeof initialValue === 'function'
-          ? { fn: initialValue }
-          : initialValue,
-      ]);
+      values.push([atoms[key], initialValue]);
     }
   }
 
@@ -38,7 +33,7 @@ export const useHydrateStore = (
  * Update atoms with new values on changes.
  */
 export const useSyncStore = (
-  atoms: AtomRecord<any>,
+  atoms: SimpleWritableAtomRecord<any>,
   values: any,
   { store }: Parameters<UseSyncAtoms<any>>[1] = {}
 ) => {
@@ -50,7 +45,7 @@ export const useSyncStore = (
 
     useEffect(() => {
       if (value !== undefined && value !== null) {
-        set(typeof value === 'function' ? { fn: value } : value);
+        set(value);
       }
     }, [set, value]);
   }

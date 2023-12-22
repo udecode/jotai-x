@@ -3,6 +3,7 @@
  */
 
 export * from './atomProvider';
+export * from './atomWithFn';
 export * from './createAtomProvider';
 export * from './createAtomStore';
 export * from './useHydrateStore';
