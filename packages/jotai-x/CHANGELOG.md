@@ -1,5 +1,11 @@
 # jotai-x
 
+## 1.2.0
+
+### Minor Changes
+
+- [#4](https://github.com/udecode/jotai-x/pull/4) by [@12joan](https://github.com/12joan) – Add `warnIfNoStore` option to `UseAtomOptions`
+
 ## 1.1.0
 
 ### Minor Changes
