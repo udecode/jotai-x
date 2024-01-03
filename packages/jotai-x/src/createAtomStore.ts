@@ -14,6 +14,7 @@ export type UseAtomOptions = {
   scope?: string;
   store?: JotaiStore;
   delay?: number;
+  warnIfNoStore?: boolean;
 };
 
 type UseAtomOptionsOrScope = UseAtomOptions | string;
@@ -225,19 +226,23 @@ export const createAtomStore = <
   const setAtoms = {} as SetRecord<MyWritableStoreAtoms>;
   const useAtoms = {} as UseRecord<MyWritableStoreAtoms>;
 
-  const useStore = (
-    optionsOrScope: UseAtomOptionsOrScope = {},
-    warnIfUndefined = true
-  ) => {
-    const { scope, store } = convertScopeShorthand(optionsOrScope);
-    const contextStore = useAtomStore(name, scope, warnIfUndefined);
+  const useStore = (optionsOrScope: UseAtomOptionsOrScope = {}) => {
+    const {
+      scope,
+      store,
+      warnIfNoStore = true,
+    } = convertScopeShorthand(optionsOrScope);
+    const contextStore = useAtomStore(name, scope, !store && warnIfNoStore);
     return store ?? contextStore;
   };
 
   const useAtomValueWithStore: GetAtomFn = (atomConfig, optionsOrScope) => {
-    const store = useStore(optionsOrScope, false);
-    const { delay = delayRoot } = convertScopeShorthand(optionsOrScope);
-    return useAtomValue(atomConfig, { store, delay });
+    const options = convertScopeShorthand(optionsOrScope);
+    const store = useStore({ warnIfNoStore: false, ...options });
+    return useAtomValue(atomConfig, {
+      store,
+      delay: options.delay ?? delayRoot,
+    });
   };
 
   const useSetAtomWithStore: SetAtomFn = (atomConfig, optionsOrScope) => {
