@@ -41,6 +41,12 @@ type StoreAtomsWithoutExtend<T> = {
   [K in keyof T]: T[K] extends Atom<any> ? T[K] : SimpleWritableAtom<T[K]>;
 };
 
+type ValueTypesForAtoms<T> = {
+  [K in keyof T]: T[K] extends Atom<infer V> ? V : never;
+};
+
+type StoreInitialValues<T> = ValueTypesForAtoms<StoreAtomsWithoutExtend<T>>;
+
 type StoreAtoms<T, E> = StoreAtomsWithoutExtend<T> & E;
 
 type FilterWritableAtoms<T> = {
@@ -108,7 +114,9 @@ export type AtomStoreApi<
 > = {
   name: N;
 } & {
-  [key in keyof Record<NameProvider<N>, object>]: FC<ProviderProps<T>>;
+  [key in keyof Record<NameProvider<N>, object>]: FC<
+    ProviderProps<StoreInitialValues<T>>
+  >;
 } & {
   [key in keyof Record<NameStore<N>, object>]: StoreApi<T, E, N>;
 } & {
@@ -185,6 +193,7 @@ export const createAtomStore = <
   type MyStoreAtomsWithoutExtend = StoreAtomsWithoutExtend<T>;
   type MyWritableStoreAtomsWithoutExtend =
     FilterWritableAtoms<MyStoreAtomsWithoutExtend>;
+  type MyStoreInitialValues = StoreInitialValues<T>;
 
   const providerIndex = getProviderIndex(name) as NameProvider<N>;
   const useStoreIndex = getUseStoreIndex(name) as UseNameStore<N>;
@@ -278,11 +287,10 @@ export const createAtomStore = <
     }
   }
 
-  const Provider: FC<ProviderProps<T>> = createAtomProvider(
-    name,
-    writableAtomsWithoutExtend,
-    { effect }
-  );
+  const Provider: FC<ProviderProps<MyStoreInitialValues>> = createAtomProvider<
+    MyStoreInitialValues,
+    N
+  >(name, writableAtomsWithoutExtend, { effect });
 
   const storeApi: StoreApi<T, E, N> = {
     atom: atoms,

@@ -483,7 +483,7 @@ describe('createAtomStore', () => {
       isCustomAtom: true,
     });
 
-    const { customStore } = createAtomStore(
+    const { customStore, useCustomStore, CustomProvider } = createAtomStore(
       {
         x: createCustomAtom(1),
       },
@@ -495,6 +495,16 @@ describe('createAtomStore', () => {
     it('uses passed atom', () => {
       const myAtom = customStore.atom.x as CustomAtom<number>;
       expect(myAtom.isCustomAtom).toBe(true);
+    });
+
+    it('accepts initial values', () => {
+      const { result } = renderHook(() => useCustomStore().get.x(), {
+        wrapper: ({ children }) => (
+          <CustomProvider x={2}>{children}</CustomProvider>
+        ),
+      });
+
+      expect(result.current).toBe(2);
     });
   });
 
