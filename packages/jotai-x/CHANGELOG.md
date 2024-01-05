@@ -1,5 +1,11 @@
 # jotai-x
 
+## 1.2.1
+
+### Patch Changes
+
+- [#6](https://github.com/udecode/jotai-x/pull/6) by [@12joan](https://github.com/12joan) – Fix: Provider prop types expect atoms instead of values for stores created with custom atoms
+
 ## 1.2.0
 
 ### Minor Changes
