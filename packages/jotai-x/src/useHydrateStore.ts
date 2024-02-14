@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React from 'react';
 import { useSetAtom } from 'jotai';
 import { useHydrateAtoms } from 'jotai/utils';
 
@@ -43,7 +43,7 @@ export const useSyncStore = (
 
     const set = useSetAtom(atom, { store });
 
-    useEffect(() => {
+    React.useEffect(() => {
       if (value !== undefined && value !== null) {
         set(value);
       }

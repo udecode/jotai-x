@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 
-import React, { ReactNode, useMemo, useState } from 'react';
+import React from 'react';
 import { act, render } from '@testing-library/react';
 
 import { createAtomStore } from './createAtomStore';
@@ -63,9 +63,9 @@ describe('ElementProvider', () => {
     children,
   }: {
     name: string;
-    children: ReactNode;
+    children: React.ReactNode;
   }) => {
-    const element = useMemo(() => makeNameElement(name), [name]);
+    const element = React.useMemo(() => makeNameElement(name), [name]);
 
     return (
       <ElementProvider element={element} scope="name">
@@ -79,9 +79,9 @@ describe('ElementProvider', () => {
     children,
   }: {
     age: number;
-    children: ReactNode;
+    children: React.ReactNode;
   }) => {
-    const element = useMemo(() => makeAgeElement(age), [age]);
+    const element = React.useMemo(() => makeAgeElement(age), [age]);
 
     return (
       <ElementProvider element={element} scope="age">
@@ -99,9 +99,9 @@ describe('ElementProvider', () => {
     initialAge: number;
     increment: number;
     buttonLabel: string;
-    children: ReactNode;
+    children: React.ReactNode;
   }) => {
-    const [age, setAge] = useState(initialAge);
+    const [age, setAge] = React.useState(initialAge);
 
     return (
       <AgeElementProvider age={age}>
