@@ -1,3 +1,4 @@
+import React from 'react';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useHydrateAtoms } from 'jotai/utils';
 
@@ -5,7 +6,6 @@ import { atomWithFn } from './atomWithFn';
 import { createAtomProvider, useAtomStore } from './createAtomProvider';
 
 import type { ProviderProps } from './createAtomProvider';
-import type { FC } from 'react';
 import type { Atom, createStore, WritableAtom } from 'jotai/vanilla';
 
 export type JotaiStore = ReturnType<typeof createStore>;
@@ -114,7 +114,7 @@ export type AtomStoreApi<
 > = {
   name: N;
 } & {
-  [key in keyof Record<NameProvider<N>, object>]: FC<
+  [key in keyof Record<NameProvider<N>, object>]: React.FC<
     ProviderProps<StoreInitialValues<T>>
   >;
 } & {
@@ -164,7 +164,7 @@ export interface CreateAtomStoreOptions<
 > {
   name: N;
   delay?: UseAtomOptions['delay'];
-  effect?: FC;
+  effect?: React.FC;
   extend?: (atomsWithoutExtend: StoreAtomsWithoutExtend<T>) => E;
 }
 
@@ -287,10 +287,12 @@ export const createAtomStore = <
     }
   }
 
-  const Provider: FC<ProviderProps<MyStoreInitialValues>> = createAtomProvider<
-    MyStoreInitialValues,
-    N
-  >(name, writableAtomsWithoutExtend, { effect });
+  const Provider: React.FC<ProviderProps<MyStoreInitialValues>> =
+    createAtomProvider<MyStoreInitialValues, N>(
+      name,
+      writableAtomsWithoutExtend,
+      { effect }
+    );
 
   const storeApi: StoreApi<T, E, N> = {
     atom: atoms,

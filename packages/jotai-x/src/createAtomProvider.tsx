@@ -1,11 +1,4 @@
-import React, {
-  createContext,
-  FC,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React from 'react';
 import { createStore } from 'jotai/vanilla';
 
 import { AtomProvider, AtomProviderProps } from './atomProvider';
@@ -21,7 +14,9 @@ const getFullyQualifiedScope = (storeName: string, scope: string) => {
  * to reference any provider belonging to the store, regardless of scope.
  */
 const PROVIDER_SCOPE = 'provider';
-const AtomStoreContext = createContext<Map<string, JotaiStore>>(new Map());
+const AtomStoreContext = React.createContext<Map<string, JotaiStore>>(
+  new Map()
+);
 
 /**
  * Tries to find a store in each of the following places, in order:
@@ -34,7 +29,7 @@ export const useAtomStore = (
   scope: string = PROVIDER_SCOPE,
   warnIfUndefined: boolean = true
 ): JotaiStore | undefined => {
-  const storeContext = useContext(AtomStoreContext);
+  const storeContext = React.useContext(AtomStoreContext);
   const store =
     storeContext.get(getFullyQualifiedScope(storeName, scope)) ??
     storeContext.get(getFullyQualifiedScope(storeName, PROVIDER_SCOPE));
@@ -82,23 +77,24 @@ export const HydrateAtoms = <T extends object>({
 export const createAtomProvider = <T extends object, N extends string = ''>(
   storeScope: N,
   atoms: SimpleWritableAtomRecord<T>,
-  options: { effect?: FC } = {}
+  options: { effect?: React.FC } = {}
 ) => {
   const Effect = options.effect;
 
   // eslint-disable-next-line react/display-name
   return ({ store, scope, children, resetKey, ...props }: ProviderProps<T>) => {
-    const [storeState, setStoreState] = useState<JotaiStore>(createStore());
+    const [storeState, setStoreState] =
+      React.useState<JotaiStore>(createStore());
 
-    useEffect(() => {
+    React.useEffect(() => {
       if (resetKey) {
         setStoreState(createStore());
       }
     }, [resetKey]);
 
-    const previousStoreContext = useContext(AtomStoreContext);
+    const previousStoreContext = React.useContext(AtomStoreContext);
 
-    const storeContext = useMemo(() => {
+    const storeContext = React.useMemo(() => {
       const newStoreContext = new Map(previousStoreContext);
 
       if (scope) {
