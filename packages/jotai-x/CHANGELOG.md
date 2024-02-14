@@ -1,5 +1,11 @@
 # jotai-x
 
+## 1.2.2
+
+### Patch Changes
+
+- [#8](https://github.com/udecode/jotai-x/pull/8) by [@zbeyens](https://github.com/zbeyens) – Fix React imports for SSR
+
 ## 1.2.1
 
 ### Patch Changes
