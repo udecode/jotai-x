@@ -42,12 +42,13 @@ export const useAtomStore = (
   return store;
 };
 
-export type ProviderProps<T extends object> = AtomProviderProps &
-  Partial<T> & {
-    scope?: string;
-    initialValues?: Partial<T>;
-    resetKey?: any;
-  };
+export type ProviderProps<T extends object> = Partial<T> & {
+  store?: JotaiStore;
+  scope?: string;
+  initialValues?: Partial<T>;
+  resetKey?: any;
+  children: React.ReactNode;
+};
 
 export const HydrateAtoms = <T extends object>({
   initialValues,
