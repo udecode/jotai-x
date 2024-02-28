@@ -1,7 +1,6 @@
 import React from 'react';
 import { createStore } from 'jotai/vanilla';
 
-import { AtomProvider, AtomProviderProps } from './atomProvider';
 import { JotaiStore, SimpleWritableAtomRecord } from './createAtomStore';
 import { useHydrateStore, useSyncStore } from './useHydrateStore';
 
@@ -43,12 +42,13 @@ export const useAtomStore = (
   return store;
 };
 
-export type ProviderProps<T extends object> = AtomProviderProps &
-  Partial<T> & {
-    scope?: string;
-    initialValues?: Partial<T>;
-    resetKey?: any;
-  };
+export type ProviderProps<T extends object> = Partial<T> & {
+  store?: JotaiStore;
+  scope?: string;
+  initialValues?: Partial<T>;
+  resetKey?: any;
+  children: React.ReactNode;
+};
 
 export const HydrateAtoms = <T extends object>({
   initialValues,
@@ -116,13 +116,11 @@ export const createAtomProvider = <T extends object, N extends string = ''>(
 
     return (
       <AtomStoreContext.Provider value={storeContext}>
-        <AtomProvider store={storeState}>
-          <HydrateAtoms store={storeState} atoms={atoms} {...(props as any)}>
-            {!!Effect && <Effect />}
+        <HydrateAtoms store={storeState} atoms={atoms} {...(props as any)}>
+          {!!Effect && <Effect />}
 
-            {children}
-          </HydrateAtoms>
-        </AtomProvider>
+          {children}
+        </HydrateAtoms>
       </AtomStoreContext.Provider>
     );
   };
