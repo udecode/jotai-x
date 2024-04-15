@@ -1,5 +1,13 @@
 # jotai-x
 
+## 1.2.3
+
+### Patch Changes
+
+- [#11](https://github.com/udecode/jotai-x/pull/11) by [@12joan](https://github.com/12joan) – Do not render jotai's Provider component as part of jotai-x's provider. Jotai's Provider is unnecessary and interferes with vanilla jotai atoms.
+
+- [#13](https://github.com/udecode/jotai-x/pull/13) by [@zbeyens](https://github.com/zbeyens) – use client in createAtomProvider
+
 ## 1.2.2
 
 ### Patch Changes
