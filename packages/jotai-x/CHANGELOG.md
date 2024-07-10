@@ -1,5 +1,11 @@
 # jotai-x
 
+## 1.2.4
+
+### Patch Changes
+
+- [`24a1de7`](https://github.com/udecode/jotai-x/commit/24a1de747cea2ecc89b3005877527a7805a0eb87) by [@zbeyens](https://github.com/zbeyens) – doc
+
 ## 1.2.3
 
 ### Patch Changes
