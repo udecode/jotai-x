@@ -113,8 +113,6 @@ connect.lock
 #storybook
 storybook-static/
 
-# Local
-packages/plate/docs/
 # Local Netlify folder
 .netlify
 /test-results/

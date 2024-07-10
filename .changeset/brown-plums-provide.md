@@ -1,0 +1,5 @@
+---
+'jotai-x': patch
+---
+
+doc

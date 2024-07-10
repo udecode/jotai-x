@@ -12,7 +12,7 @@ which solves these challenges, so you can focus on your app.
 yarn add jotai jotai-x
 ```
 
-For further details and API documentation, visit [jotai-x.udecode.io](https://jotai-x.udecode.io).
+For further details and API documentation, visit [jotai-x.udecode.dev](https://jotai-x.udecode.dev).
 
 ## **Why Choose `jotai-x`?**
 
