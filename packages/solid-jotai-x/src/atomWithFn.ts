@@ -1,4 +1,4 @@
-import { atom } from 'jotai';
+import { atom } from 'solid-jotai';
 
 import type { WritableAtom } from 'jotai/vanilla';
 

@@ -1,9 +1,12 @@
 import '@testing-library/jest-dom';
 
-import React from 'react';
 import { act, queryByText, render, renderHook } from '@testing-library/react';
-import { atom, PrimitiveAtom, useAtomValue } from 'jotai';
 import { splitAtom } from 'jotai/utils';
+import { atom, useAtomValue } from 'solid-jotai';
+import { createSignal } from 'solid-js';
+
+import type { PrimitiveAtom } from 'jotai';
+import type { JSX } from 'solid-js';
 
 import { createAtomStore } from './createAtomStore';
 
@@ -54,8 +57,8 @@ describe('createAtomStore', () => {
     const MUTABLE_PROVIDER_INITIAL_AGE = 19;
     const MUTABLE_PROVIDER_NEW_AGE = 20;
 
-    const MutableProvider = ({ children }: { children: React.ReactNode }) => {
-      const [age, setAge] = React.useState(MUTABLE_PROVIDER_INITIAL_AGE);
+    const MutableProvider = ({ children }: { children: JSX.Element }) => {
+      const [age, setAge] = createSignal(MUTABLE_PROVIDER_INITIAL_AGE);
 
       return (
         <>
@@ -74,9 +77,9 @@ describe('createAtomStore', () => {
     const BecomeFriendsProvider = ({
       children,
     }: {
-      children: React.ReactNode;
+      children: JSX.Element;
     }) => {
-      const [becameFriends, setBecameFriends] = React.useState(false);
+      const [becameFriends, setBecameFriends] = createSignal(false);
 
       return (
         <>
@@ -111,7 +114,7 @@ describe('createAtomStore', () => {
 
     const BecomeFriendsSetter = () => {
       const setBecomeFriends = useMyTestStoreStore().set.becomeFriends();
-      const [becameFriends, setBecameFriends] = React.useState(false);
+      const [becameFriends, setBecameFriends] = createSignal(false);
 
       return (
         <>
@@ -129,7 +132,7 @@ describe('createAtomStore', () => {
 
     const BecomeFriendsUser = () => {
       const [, setBecomeFriends] = useMyTestStoreStore().use.becomeFriends();
-      const [becameFriends, setBecameFriends] = React.useState(false);
+      const [becameFriends, setBecameFriends] = createSignal(false);
 
       return (
         <>

@@ -1,7 +1,9 @@
 import '@testing-library/jest-dom';
 
-import React from 'react';
 import { act, render } from '@testing-library/react';
+import { createMemo, createSignal } from 'solid-js';
+
+import type { JSX } from 'solid-js';
 
 import { createAtomStore } from './createAtomStore';
 
@@ -63,9 +65,9 @@ describe('ElementProvider', () => {
     children,
   }: {
     name: string;
-    children: React.ReactNode;
+    children: JSX.Element;
   }) => {
-    const element = React.useMemo(() => makeNameElement(name), [name]);
+    const element = createMemo(() => makeNameElement(name), [name]);
 
     return (
       <ElementProvider element={element} scope="name">
@@ -79,9 +81,9 @@ describe('ElementProvider', () => {
     children,
   }: {
     age: number;
-    children: React.ReactNode;
+    children: JSX.Element;
   }) => {
-    const element = React.useMemo(() => makeAgeElement(age), [age]);
+    const element = createMemo(() => makeAgeElement(age), [age]);
 
     return (
       <ElementProvider element={element} scope="age">
@@ -99,9 +101,9 @@ describe('ElementProvider', () => {
     initialAge: number;
     increment: number;
     buttonLabel: string;
-    children: React.ReactNode;
+    children: JSX.Element;
   }) => {
-    const [age, setAge] = React.useState(initialAge);
+    const [age, setAge] = createSignal(initialAge);
 
     return (
       <AgeElementProvider age={age}>

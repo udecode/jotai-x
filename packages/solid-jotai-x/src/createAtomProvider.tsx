@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
-import { createStore } from 'jotai/vanilla';
+import { createStore } from 'solid-jotai';
+import { createContext, createEffect, createMemo, createSignal, useContext } from 'solid-js';
+
+import type { Component, JSX } from 'solid-js';
 
 import { JotaiStore, SimpleWritableAtomRecord } from './createAtomStore';
 import { useHydrateStore, useSyncStore } from './useHydrateStore';
@@ -15,7 +17,7 @@ const getFullyQualifiedScope = (storeName: string, scope: string) => {
  * to reference any provider belonging to the store, regardless of scope.
  */
 const PROVIDER_SCOPE = 'provider';
-const AtomStoreContext = React.createContext<Map<string, JotaiStore>>(
+const AtomStoreContext = createContext<Map<string, JotaiStore>>(
   new Map()
 );
 
@@ -30,7 +32,7 @@ export const useAtomStore = (
   scope: string = PROVIDER_SCOPE,
   warnIfUndefined: boolean = true
 ): JotaiStore | undefined => {
-  const storeContext = React.useContext(AtomStoreContext);
+  const storeContext = useContext(AtomStoreContext);
   const store =
     storeContext.get(getFullyQualifiedScope(storeName, scope)) ??
     storeContext.get(getFullyQualifiedScope(storeName, PROVIDER_SCOPE));
@@ -49,7 +51,7 @@ export type ProviderProps<T extends object> = Partial<T> & {
   scope?: string;
   initialValues?: Partial<T>;
   resetKey?: any;
-  children: React.ReactNode;
+  children: JSX.Element;
 };
 
 export const HydrateAtoms = <T extends object>({
@@ -79,24 +81,24 @@ export const HydrateAtoms = <T extends object>({
 export const createAtomProvider = <T extends object, N extends string = ''>(
   storeScope: N,
   atoms: SimpleWritableAtomRecord<T>,
-  options: { effect?: React.FC } = {}
+  options: { effect?: Component } = {}
 ) => {
   const Effect = options.effect;
 
   // eslint-disable-next-line react/display-name
   return ({ store, scope, children, resetKey, ...props }: ProviderProps<T>) => {
     const [storeState, setStoreState] =
-      React.useState<JotaiStore>(createStore());
+      createSignal<JotaiStore>(createStore());
 
-    React.useEffect(() => {
+    createEffect(() => {
       if (resetKey) {
         setStoreState(createStore());
       }
-    }, [resetKey]);
+    });
 
-    const previousStoreContext = React.useContext(AtomStoreContext);
+    const previousStoreContext = useContext(AtomStoreContext);
 
-    const storeContext = React.useMemo(() => {
+    const storeContext = createMemo(() => {
       const newStoreContext = new Map(previousStoreContext);
 
       if (scope) {
@@ -114,7 +116,7 @@ export const createAtomProvider = <T extends object, N extends string = ''>(
       );
 
       return newStoreContext;
-    }, [previousStoreContext, scope, storeState]);
+    });
 
     return (
       <AtomStoreContext.Provider value={storeContext}>

@@ -1,6 +1,6 @@
-import React from 'react';
-import { useSetAtom } from 'jotai';
-import { useHydrateAtoms } from 'jotai/utils';
+import { createEffect } from 'solid-js';
+import { useSetAtom } from 'solid-jotai';
+import { useHydrateAtoms } from 'solid-jotai/utils';
 
 import {
   SimpleWritableAtomRecord,
@@ -43,10 +43,10 @@ export const useSyncStore = (
 
     const set = useSetAtom(atom, { store });
 
-    React.useEffect(() => {
+    createEffect(() => {
       if (value !== undefined && value !== null) {
         set(value);
       }
-    }, [set, value]);
+    });
   }
 };
