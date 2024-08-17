@@ -1,13 +1,13 @@
 {
-  "name": "jotai-x",
-  "version": "1.2.4",
+  "name": "solid-jotai-x",
+  "version": "1.0.0",
   "description": "Jotai store factory for a best-in-class developer experience.",
   "license": "MIT",
   "homepage": "https://jotai-x.udecode.dev/",
   "repository": {
     "type": "git",
     "url": "https://github.com/udecode/jotai-x.git",
-    "directory": "packages/jotai-x"
+    "directory": "packages/solid-jotai-x"
   },
   "bugs": {
     "url": "https://github.com/udecode/jotai-x/issues"
@@ -39,20 +39,13 @@
     "typecheck": "yarn p:typecheck"
   },
   "peerDependencies": {
-    "@types/react": ">=17.0.0",
-    "jotai": ">=2.0.0",
-    "react": ">=17.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@types/react": {
-      "optional": true
-    },
-    "react": {
-      "optional": true
-    }
+    "jotai": ">=2",
+    "solid-jotai": ">=0",
+    "solid-js": ">=1"
   },
   "keywords": [
-    "jotai"
+    "jotai",
+    "solid-jotai"
   ],
   "publishConfig": {
     "access": "public"
