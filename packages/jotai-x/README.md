@@ -251,7 +251,7 @@ const Component = () => {
 ## Migrate from v1 to v2
 
 1. Return of `use<Name>Store`: `get` is renamed to `useValue`, `set` is renamed to `useSet`
-``` js
+``` diff
 - const name = useAppStore().get.name();
 - const setName = useAppStore().set.name();
 + const name = useAppStore().useValue.name();
@@ -259,13 +259,13 @@ const Component = () => {
 ```
 
 2. Return of `use<Name>Store`: `store` is no longer a function. Now it is a direct property.
-``` js
+``` diff
 - const store = useAppStore().store();
 + const store = useAppStore().store;
 ```
 
 3. Return of `use<Name>Store`: `option` is no longer a valid parameter of `useValue` and `useSet`. To control the behavior, directly pass the options to `createAtomStore` or `use<Name>Store`.
-``` js
+``` diff
 - const scope1Name = useAppStore().useValue.name(scope1Options);
 - const scope2Name = useAppStore().useValue.name(scope2Options);
 + const scope1Name = useAppStore(scope1Options).useValue.name();
