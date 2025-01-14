@@ -7,11 +7,8 @@ import { useHydrateAtoms } from 'jotai/utils';
 import { atomWithFn } from './atomWithFn';
 import { createAtomProvider, useAtomStore } from './createAtomProvider';
 
-
-
 import type { ProviderProps } from './createAtomProvider';
 import type { Atom, createStore, WritableAtom } from 'jotai/vanilla';
-
 
 export type JotaiStore = ReturnType<typeof createStore>;
 
@@ -129,14 +126,6 @@ type SubscribeAtomFn = <V>(
   options?: UseAtomOptionsOrScope
 ) => (callback: (newValue: V) => void) => () => void;
 
-type FirstParameter<P extends any[]> = P extends [infer A, ...any[]] ? [A] : [];
-
-type KeepFirstParameter<T extends (...args: any[]) => any> = T extends (
-  ...args: infer P
-) => infer R
-  ? (...args: FirstParameter<P>) => R
-  : T;
-
 export type UseStoreApi<T, E> = (options?: UseAtomOptionsOrScope) => {
   useValue: UseValueRecord<StoreAtoms<T, E>> & {
     atom: <V>(atom: Atom<V>) => V;
@@ -202,7 +191,7 @@ const withStoreAndOptions = <T extends object>(
   Object.fromEntries(
     Object.entries(fnRecord).map(([key, fn]) => [
       key,
-      () => (fn as any)(store, options),
+      (...args: any[]) => (fn as any)(store, options, ...args),
     ])
   ) as any;
 
@@ -371,8 +360,9 @@ export const createAtomStore = <
 
     (subscribeAtoms as any)[key] = (
       store: JotaiStore | undefined,
-      optionsOrScope: UseAtomOptionsOrScope = {}
-    ) => subscribeAtomWithStore(atomConfig, store, optionsOrScope);
+      optionsOrScope: UseAtomOptionsOrScope = {},
+      callback: (newValue: any) => void
+    ) => subscribeAtomWithStore(atomConfig, store, optionsOrScope)(callback);
 
     if (isWritable) {
       (useSetAtoms as any)[key] = (
@@ -387,13 +377,14 @@ export const createAtomStore = <
 
       (setAtoms as any)[key] = (
         store: JotaiStore | undefined,
-        optionsOrScope: UseAtomOptionsOrScope = {}
+        optionsOrScope: UseAtomOptionsOrScope = {},
+        ...args: any[]
       ) =>
         setAtomWithStore(
           atomConfig as WritableAtom<any, any, any>,
           store,
           optionsOrScope
-        );
+        )(...args);
 
       (useAtoms as any)[key] = (
         store: JotaiStore | undefined,

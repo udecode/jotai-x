@@ -51,6 +51,27 @@ describe('createAtomStore', () => {
       );
     };
 
+    const SubscribeConsumer = ({
+      subName,
+      subAge,
+    }: {
+      subName: (newName: string) => void;
+      subAge: (newAge: number) => void;
+    }) => {
+      const store = useMyTestStoreStore();
+
+      React.useEffect(() => {
+        const unsubscribeName = store.subscribe.name(subName);
+        const unsubscribeAge = store.subscribe.age(subAge);
+        return () => {
+          unsubscribeName();
+          unsubscribeAge();
+        };
+      }, [store, subName, subAge]);
+
+      return null;
+    };
+
     const MUTABLE_PROVIDER_INITIAL_AGE = 19;
     const MUTABLE_PROVIDER_NEW_AGE = 20;
 
@@ -109,6 +130,23 @@ describe('createAtomStore', () => {
       );
     };
 
+    const BecomeFriendsGet = () => {
+      // Make sure both of these are actual functions, not wrapped functions
+      const store = useMyTestStoreStore();
+
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            store.get.becomeFriends()();
+            store.get.atom(myTestStoreStore.atom.becomeFriends)();
+          }}
+        >
+          Become Friends
+        </button>
+      );
+    };
+
     const BecomeFriendsUseSet = () => {
       const setBecomeFriends = useMyTestStoreStore().useSet.becomeFriends();
       const [becameFriends, setBecameFriends] = React.useState(false);
@@ -122,7 +160,26 @@ describe('createAtomStore', () => {
             Change Callback
           </button>
 
-          <div>setterBecameFriends: {becameFriends.toString()}</div>
+          <div>useSetBecameFriends: {becameFriends.toString()}</div>
+        </>
+      );
+    };
+
+    const BecomeFriendsSet = () => {
+      const store = useMyTestStoreStore();
+      const [becameFriends, setBecameFriends] = React.useState(false);
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() =>
+              store.set.becomeFriends(() => setBecameFriends(true))
+            }
+          >
+            Change Callback
+          </button>
+
+          <div>setBecameFriends: {becameFriends.toString()}</div>
         </>
       );
     };
@@ -140,7 +197,7 @@ describe('createAtomStore', () => {
             Change Callback
           </button>
 
-          <div>userBecameFriends: {becameFriends.toString()}</div>
+          <div>useBecameFriends: {becameFriends.toString()}</div>
         </>
       );
     };
@@ -232,7 +289,36 @@ describe('createAtomStore', () => {
       expect(getByText(WRITE_ONLY_CONSUMER_AGE)).toBeInTheDocument();
     });
 
-    it('provides and gets functions', () => {
+    it('can subscribe', () => {
+      const subName = jest.fn();
+      const subAge = jest.fn();
+      const { getByText } = render(
+        <MutableProvider>
+          <SubscribeConsumer subName={subName} subAge={subAge} />
+          <WriteOnlyConsumer />
+        </MutableProvider>
+      );
+
+      expect(subName).toHaveBeenCalledTimes(0);
+      expect(subAge).toHaveBeenCalledTimes(0);
+
+      act(() => getByText('consumerSetAge').click());
+
+      expect(subName).toHaveBeenCalledTimes(0);
+      expect(subAge).toHaveBeenNthCalledWith(1, WRITE_ONLY_CONSUMER_AGE);
+
+      act(() => getByText('providerSetAge').click());
+
+      expect(subName).toHaveBeenCalledTimes(0);
+      expect(subAge).toHaveBeenNthCalledWith(2, MUTABLE_PROVIDER_NEW_AGE);
+
+      act(() => getByText('consumerSetAge').click());
+
+      expect(subName).toHaveBeenCalledTimes(0);
+      expect(subAge).toHaveBeenNthCalledWith(3, WRITE_ONLY_CONSUMER_AGE);
+    });
+
+    it('provides and useValue of functions', () => {
       const { getByText } = render(
         <BecomeFriendsProvider>
           <BecomeFriendsUseValue />
@@ -244,7 +330,19 @@ describe('createAtomStore', () => {
       expect(getByText('becameFriends: true')).toBeInTheDocument();
     });
 
-    it('sets functions', () => {
+    it('provides and get functions', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsGet />
+        </BecomeFriendsProvider>
+      );
+
+      expect(getByText('becameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('becameFriends: true')).toBeInTheDocument();
+    });
+
+    it('useSet of functions', () => {
       const { getByText } = render(
         <BecomeFriendsProvider>
           <BecomeFriendsUseSet />
@@ -253,9 +351,23 @@ describe('createAtomStore', () => {
       );
 
       act(() => getByText('Change Callback').click());
-      expect(getByText('setterBecameFriends: false')).toBeInTheDocument();
+      expect(getByText('useSetBecameFriends: false')).toBeInTheDocument();
       act(() => getByText('Become Friends').click());
-      expect(getByText('setterBecameFriends: true')).toBeInTheDocument();
+      expect(getByText('useSetBecameFriends: true')).toBeInTheDocument();
+    });
+
+    it('set of functions', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsSet />
+          <BecomeFriendsUseValue />
+        </BecomeFriendsProvider>
+      );
+
+      act(() => getByText('Change Callback').click());
+      expect(getByText('setBecameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('setBecameFriends: true')).toBeInTheDocument();
     });
 
     it('uses functions', () => {
@@ -267,9 +379,9 @@ describe('createAtomStore', () => {
       );
 
       act(() => getByText('Change Callback').click());
-      expect(getByText('userBecameFriends: false')).toBeInTheDocument();
+      expect(getByText('useBecameFriends: false')).toBeInTheDocument();
       act(() => getByText('Become Friends').click());
-      expect(getByText('userBecameFriends: true')).toBeInTheDocument();
+      expect(getByText('useBecameFriends: true')).toBeInTheDocument();
     });
   });
 
