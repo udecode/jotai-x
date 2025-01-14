@@ -88,7 +88,11 @@ The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) contai
     > Example: `const store = useElementStore().store`
   - **`subscribe`**: Subscribe to the state change. . See [createStore](https://jotai.org/docs/core/store#createstore)
     - NOTE: The subscribed callback will fire whenever the atom state or dependent atom states change. There is no equality check.
-    > Example: `useElementStore().subscribe.element((newElement) => console.log(newElement))`
+    > Example:
+      ``` js
+        const store = useElementStore();
+        useEffect(() => store.subscribe.element((newElement) => console.log(newElement)), []);
+      ```
 - **`<Name>Provider`**:
   - The API includes dynamically generated provider components for each defined store. This allows  scoped state management within your application. More information in the next section.
 - **`<name>Store`**:
