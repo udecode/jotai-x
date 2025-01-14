@@ -63,11 +63,14 @@ The **`options`** object can include several properties to customize the behavio
 The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) containing the following properties and methods for interacting with the store:
 
 - **`use<Name>Store`**: 
-  - A function that returns the following objects: **`get`**, **`set`**, **`use`** and **`store`**, where values are hooks for each state defined in the store.
+  - A function that returns the following objects: **`get`**, **`set`**, **`use`**, where values are hooks for each state defined in the store, and **`read`**, **`write`**, **`subscribe`**, **`store`**, where values are direct read/write accessors to modify each state.
   - **`get`**: Hooks for accessing a state within a component,  ensuring re-rendering when the state changes. See [useAtomValue](https://jotai.org/docs/core/use-atom#useatomvalue).
   - **`set`**: Hooks for setting a state within a component. See [useSetAtom](https://jotai.org/docs/core/use-atom#usesetatom).
   - **`use`**: Hooks for accessing and setting a state within a component, ensuring re-rendering when the state changes. See [useAtom](https://jotai.org/docs/core/use-atom).
-  - **`store`**: A hook to access the [JotaiStore](https://jotai.org/docs/core/store) for the current context.
+  - **`read`**: Direct read access to the state. See[createStore](https://jotai.org/docs/core/store#createstore)
+  - **`write`**: Direct write access to the state. See[createStore](https://jotai.org/docs/core/store#createstore)
+  - **`store`**: The [JotaiStore](https://jotai.org/docs/core/store) for the current context.
+  - **`subscribe`**: Subscribe to the state change. . See[createStore](https://jotai.org/docs/core/store#createstore)
   - Example: `const [element, setElement] = useElementStore().use.element()`
 - **`<Name>Provider`**:
   - The API includes dynamically generated provider components for each defined store. This allows  scoped state management within your application. More information in the next section.
@@ -162,8 +165,20 @@ const App = () => {
 };
 
 const Component = () => {
-  const [name, setName] = useAppStore().use.name();
-  const onUpdateName = useAppStore().get.onUpdateName();
+  const store = useAppStore();
+  const [name, setName] = store.use.name();
+  const onUpdateName = store.get.onUpdateName();
+
+  useEffect(() => store.subscribe.name((newName) => {
+    console.log(`Name updated to: ${newName}`);
+    // An alternative to `store.use.name()`, won't rerender when the state changes
+    assert.ok(newName === store.read.name());
+    if (newName.includes('#')) {
+      // Equivalent to `setName`
+      store.write.name('invalid');
+      onUpdateName('invalid');
+    }
+  }), [store])
   
   return (
     <div>
