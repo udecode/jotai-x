@@ -28,8 +28,8 @@ describe('createAtomStore', () => {
       createAtomStore(initialTestStoreValue, { name: 'myTestStore' as const });
 
     const ReadOnlyConsumer = () => {
-      const name = useMyTestStoreStore().get.name();
-      const age = useMyTestStoreStore().get.age();
+      const name = useMyTestStoreStore().useValue.name();
+      const age = useMyTestStoreStore().useValue.age();
 
       return (
         <div>
@@ -42,7 +42,7 @@ describe('createAtomStore', () => {
     const WRITE_ONLY_CONSUMER_AGE = 99;
 
     const WriteOnlyConsumer = () => {
-      const setAge = useMyTestStoreStore().set.age();
+      const setAge = useMyTestStoreStore().useSet.age();
 
       return (
         <button type="button" onClick={() => setAge(WRITE_ONLY_CONSUMER_AGE)}>
@@ -89,10 +89,10 @@ describe('createAtomStore', () => {
       );
     };
 
-    const BecomeFriendsGetter = () => {
+    const BecomeFriendsUseValue = () => {
       // Make sure both of these are actual functions, not wrapped functions
-      const becomeFriends1 = useMyTestStoreStore().get.becomeFriends();
-      const becomeFriends2 = useMyTestStoreStore().get.atom(
+      const becomeFriends1 = useMyTestStoreStore().useValue.becomeFriends();
+      const becomeFriends2 = useMyTestStoreStore().useValue.atom(
         myTestStoreStore.atom.becomeFriends
       );
 
@@ -109,8 +109,8 @@ describe('createAtomStore', () => {
       );
     };
 
-    const BecomeFriendsSetter = () => {
-      const setBecomeFriends = useMyTestStoreStore().set.becomeFriends();
+    const BecomeFriendsUseSet = () => {
+      const setBecomeFriends = useMyTestStoreStore().useSet.becomeFriends();
       const [becameFriends, setBecameFriends] = React.useState(false);
 
       return (
@@ -127,7 +127,7 @@ describe('createAtomStore', () => {
       );
     };
 
-    const BecomeFriendsUser = () => {
+    const BecomeFriendsUse = () => {
       const [, setBecomeFriends] = useMyTestStoreStore().use.becomeFriends();
       const [becameFriends, setBecameFriends] = React.useState(false);
 
@@ -146,8 +146,8 @@ describe('createAtomStore', () => {
     };
 
     beforeEach(() => {
-      renderHook(() => useMyTestStoreStore().set.name()(INITIAL_NAME));
-      renderHook(() => useMyTestStoreStore().set.age()(INITIAL_AGE));
+      renderHook(() => useMyTestStoreStore().useSet.name()(INITIAL_NAME));
+      renderHook(() => useMyTestStoreStore().useSet.age()(INITIAL_AGE));
     });
 
     it('passes default values from provider to consumer', () => {
@@ -235,7 +235,7 @@ describe('createAtomStore', () => {
     it('provides and gets functions', () => {
       const { getByText } = render(
         <BecomeFriendsProvider>
-          <BecomeFriendsGetter />
+          <BecomeFriendsUseValue />
         </BecomeFriendsProvider>
       );
 
@@ -247,8 +247,8 @@ describe('createAtomStore', () => {
     it('sets functions', () => {
       const { getByText } = render(
         <BecomeFriendsProvider>
-          <BecomeFriendsSetter />
-          <BecomeFriendsGetter />
+          <BecomeFriendsUseSet />
+          <BecomeFriendsUseValue />
         </BecomeFriendsProvider>
       );
 
@@ -261,8 +261,8 @@ describe('createAtomStore', () => {
     it('uses functions', () => {
       const { getByText } = render(
         <BecomeFriendsProvider>
-          <BecomeFriendsUser />
-          <BecomeFriendsGetter />
+          <BecomeFriendsUse />
+          <BecomeFriendsUseValue />
         </BecomeFriendsProvider>
       );
 
@@ -286,7 +286,7 @@ describe('createAtomStore', () => {
       });
 
     const ReadOnlyConsumer = ({ scope }: { scope: string }) => {
-      const age = useMyScopedTestStoreStore({ scope }).get.age();
+      const age = useMyScopedTestStoreStore({ scope }).useValue.age();
 
       return (
         <div>
@@ -300,7 +300,7 @@ describe('createAtomStore', () => {
     }: {
       scope: string;
     }) => {
-      const age = useMyScopedTestStoreStore(scope).get.age();
+      const age = useMyScopedTestStoreStore(scope).useValue.age();
 
       return (
         <div>
@@ -385,7 +385,7 @@ describe('createAtomStore', () => {
       });
 
     const FirstReadOnlyConsumer = () => {
-      const name = useMyFirstTestStoreStore().get.name();
+      const name = useMyFirstTestStoreStore().useValue.name();
 
       return (
         <div>
@@ -395,7 +395,7 @@ describe('createAtomStore', () => {
     };
 
     const SecondReadOnlyConsumer = () => {
-      const age = useMySecondTestStoreStore().get.age();
+      const age = useMySecondTestStoreStore().useValue.age();
 
       return (
         <div>
@@ -441,7 +441,7 @@ describe('createAtomStore', () => {
     );
 
     const ReadOnlyConsumer = () => {
-      const bio = useUserStore().get.bio();
+      const bio = useUserStore().useValue.bio();
 
       return <div>{bio}</div>;
     };
@@ -452,7 +452,7 @@ describe('createAtomStore', () => {
     });
 
     it('includes extended atom in get hooks', () => {
-      const { result } = renderHook(() => useUserStore().get.bio());
+      const { result } = renderHook(() => useUserStore().useValue.bio());
       expect(result.current).toBe('Jane is 98 years old');
     });
 
@@ -502,7 +502,7 @@ describe('createAtomStore', () => {
     });
 
     it('accepts initial values', () => {
-      const { result } = renderHook(() => useCustomStore().get.x(), {
+      const { result } = renderHook(() => useCustomStore().useValue.x(), {
         wrapper: ({ children }) => (
           <CustomProvider x={2}>{children}</CustomProvider>
         ),
@@ -531,7 +531,7 @@ describe('createAtomStore', () => {
     const derivedAtom = atom((get) => `My name is ${get(userStore.atom.name)}`);
 
     const DerivedAtomConsumer = () => {
-      const message = useUserStore().get.atom(derivedAtom);
+      const message = useUserStore().useValue.atom(derivedAtom);
 
       return <div>{message}</div>;
     };

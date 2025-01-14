@@ -2,11 +2,16 @@ import React from 'react';
 import { getDefaultStore, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useHydrateAtoms } from 'jotai/utils';
 
+
+
 import { atomWithFn } from './atomWithFn';
 import { createAtomProvider, useAtomStore } from './createAtomProvider';
 
+
+
 import type { ProviderProps } from './createAtomProvider';
 import type { Atom, createStore, WritableAtom } from 'jotai/vanilla';
+
 
 export type JotaiStore = ReturnType<typeof createStore>;
 
@@ -19,19 +24,19 @@ export type UseAtomOptions = {
 
 type UseAtomOptionsOrScope = UseAtomOptions | string;
 
-type GetRecord<O> = {
+type UseValueRecord<O> = {
   [K in keyof O]: O[K] extends Atom<infer V> ? () => V : never;
 };
 
-type ReadRecord<O> = GetRecord<O>;
+type GetRecord<O> = UseValueRecord<O>;
 
-type SetRecord<O> = {
+type UseSetRecord<O> = {
   [K in keyof O]: O[K] extends WritableAtom<infer _V, infer A, infer R>
     ? () => (...args: A) => R
     : never;
 };
 
-type WriteRecord<O> = {
+type SetRecord<O> = {
   [K in keyof O]: O[K] extends WritableAtom<infer _V, infer A, infer R>
     ? (...args: A) => R
     : never;
@@ -124,15 +129,25 @@ type SubscribeAtomFn = <V>(
   options?: UseAtomOptionsOrScope
 ) => (callback: (newValue: V) => void) => () => void;
 
+type FirstParameter<P extends any[]> = P extends [infer A, ...any[]] ? [A] : [];
+
+type KeepFirstParameter<T extends (...args: any[]) => any> = T extends (
+  ...args: infer P
+) => infer R
+  ? (...args: FirstParameter<P>) => R
+  : T;
+
 export type UseStoreApi<T, E> = (options?: UseAtomOptionsOrScope) => {
+  useValue: UseValueRecord<StoreAtoms<T, E>> & {
+    atom: <V>(atom: Atom<V>) => V;
+  };
   get: GetRecord<StoreAtoms<T, E>> & { atom: <V>(atom: Atom<V>) => V };
-  read: ReadRecord<StoreAtoms<T, E>> & { atom: <V>(atom: Atom<V>) => V };
-  set: SetRecord<WritableStoreAtoms<T, E>> & {
+  useSet: UseSetRecord<WritableStoreAtoms<T, E>> & {
     atom: <V, A extends unknown[], R>(
       atom: WritableAtom<V, A, R>
     ) => (...args: A) => R;
   };
-  write: WriteRecord<WritableStoreAtoms<T, E>> & {
+  set: SetRecord<WritableStoreAtoms<T, E>> & {
     atom: <V, A extends unknown[], R>(
       atom: WritableAtom<V, A, R>
     ) => (...args: A) => R;
@@ -272,10 +287,10 @@ export const createAtomStore = <
     }
   }
 
+  const useValueAtoms = {} as UseValueRecord<MyStoreAtoms>;
   const getAtoms = {} as GetRecord<MyStoreAtoms>;
-  const readAtoms = {} as ReadRecord<MyStoreAtoms>;
+  const useSetAtoms = {} as UseSetRecord<MyWritableStoreAtoms>;
   const setAtoms = {} as SetRecord<MyWritableStoreAtoms>;
-  const writeAtoms = {} as WriteRecord<MyWritableStoreAtoms>;
   const useAtoms = {} as UseRecord<MyWritableStoreAtoms>;
   const subscribeAtoms = {} as SubscribeRecord<MyStoreAtoms>;
 
@@ -301,7 +316,7 @@ export const createAtomStore = <
     });
   };
 
-  const readAtomWithStore: GetAtomFn = (atomConfig, store, _optionsOrScope) => {
+  const getAtomWithStore: GetAtomFn = (atomConfig, store, _optionsOrScope) => {
     return (store ?? getDefaultStore()).get(atomConfig);
   };
 
@@ -313,11 +328,7 @@ export const createAtomStore = <
     return useSetAtom(atomConfig, { store });
   };
 
-  const writeAtomWithStore: SetAtomFn = (
-    atomConfig,
-    store,
-    _optionsOrScope
-  ) => {
+  const setAtomWithStore: SetAtomFn = (atomConfig, store, _optionsOrScope) => {
     return (...args) =>
       (store ?? (getDefaultStore() as NonNullable<typeof store>)).set(
         atomConfig,
@@ -348,15 +359,15 @@ export const createAtomStore = <
     const atomConfig = atoms[key as keyof MyStoreAtoms];
     const isWritable: boolean = atomIsWritable[key as keyof MyStoreAtoms];
 
-    (getAtoms as any)[key] = (
+    (useValueAtoms as any)[key] = (
       store: JotaiStore | undefined,
       optionsOrScope: UseAtomOptionsOrScope = {}
     ) => useAtomValueWithStore(atomConfig, store, optionsOrScope);
 
-    (readAtoms as any)[key] = (
+    (getAtoms as any)[key] = (
       store: JotaiStore | undefined,
       optionsOrScope: UseAtomOptionsOrScope = {}
-    ) => readAtomWithStore(atomConfig, store, optionsOrScope);
+    ) => getAtomWithStore(atomConfig, store, optionsOrScope);
 
     (subscribeAtoms as any)[key] = (
       store: JotaiStore | undefined,
@@ -364,7 +375,7 @@ export const createAtomStore = <
     ) => subscribeAtomWithStore(atomConfig, store, optionsOrScope);
 
     if (isWritable) {
-      (setAtoms as any)[key] = (
+      (useSetAtoms as any)[key] = (
         store: JotaiStore | undefined,
         optionsOrScope: UseAtomOptionsOrScope = {}
       ) =>
@@ -374,11 +385,11 @@ export const createAtomStore = <
           optionsOrScope
         );
 
-      (writeAtoms as any)[key] = (
+      (setAtoms as any)[key] = (
         store: JotaiStore | undefined,
         optionsOrScope: UseAtomOptionsOrScope = {}
       ) =>
-        writeAtomWithStore(
+        setAtomWithStore(
           atomConfig as WritableAtom<any, any, any>,
           store,
           optionsOrScope
@@ -413,25 +424,25 @@ export const createAtomStore = <
     const store = useStore(scopedOptions);
 
     return {
-      get: {
-        ...withStoreAndOptions(getAtoms, store, scopedOptions),
+      useValue: {
+        ...withStoreAndOptions(useValueAtoms, store, scopedOptions),
         atom: (atomConfig) =>
           useAtomValueWithStore(atomConfig, store, scopedOptions),
       },
-      read: {
-        ...withStoreAndOptions(readAtoms, store, scopedOptions),
+      get: {
+        ...withStoreAndOptions(getAtoms, store, scopedOptions),
         atom: (atomConfig) =>
-          readAtomWithStore(atomConfig, store, scopedOptions),
+          getAtomWithStore(atomConfig, store, scopedOptions),
       },
-      set: {
-        ...withStoreAndOptions(setAtoms, store, scopedOptions),
+      useSet: {
+        ...withStoreAndOptions(useSetAtoms, store, scopedOptions),
         atom: (atomConfig) =>
           useSetAtomWithStore(atomConfig, store, scopedOptions),
       },
-      write: {
-        ...withStoreAndOptions(writeAtoms, store, scopedOptions),
+      set: {
+        ...withStoreAndOptions(setAtoms, store, scopedOptions),
         atom: <V, A extends unknown[], R>(atomConfig: WritableAtom<V, A, R>) =>
-          writeAtomWithStore(atomConfig, store, scopedOptions),
+          setAtomWithStore(atomConfig, store, scopedOptions),
       },
       use: {
         ...withStoreAndOptions(useAtoms, store, scopedOptions),

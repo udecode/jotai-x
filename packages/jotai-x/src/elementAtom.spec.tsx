@@ -23,7 +23,7 @@ export const { useElementStore, ElementProvider } = createAtomStore(
 export const useElement = <T extends TElement = TElement>(
   pluginKey = SCOPE_ELEMENT
 ): T => {
-  const value = useElementStore(pluginKey).get.element();
+  const value = useElementStore(pluginKey).useValue.element();
 
   if (!value) {
     console.warn(
