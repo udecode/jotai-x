@@ -286,7 +286,7 @@ describe('createAtomStore', () => {
       });
 
     const ReadOnlyConsumer = ({ scope }: { scope: string }) => {
-      const age = useMyScopedTestStoreStore().get.age({ scope });
+      const age = useMyScopedTestStoreStore({ scope }).get.age();
 
       return (
         <div>

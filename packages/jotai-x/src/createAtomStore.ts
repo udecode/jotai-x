@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { getDefaultStore, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useHydrateAtoms } from 'jotai/utils';
 
 import { atomWithFn } from './atomWithFn';
@@ -20,20 +20,26 @@ export type UseAtomOptions = {
 type UseAtomOptionsOrScope = UseAtomOptions | string;
 
 type GetRecord<O> = {
-  [K in keyof O]: O[K] extends Atom<infer V>
-    ? (options?: UseAtomOptionsOrScope) => V
-    : never;
+  [K in keyof O]: O[K] extends Atom<infer V> ? () => V : never;
 };
+
+type ReadRecord<O> = GetRecord<O>;
 
 type SetRecord<O> = {
   [K in keyof O]: O[K] extends WritableAtom<infer _V, infer A, infer R>
-    ? (options?: UseAtomOptionsOrScope) => (...args: A) => R
+    ? () => (...args: A) => R
+    : never;
+};
+
+type WriteRecord<O> = {
+  [K in keyof O]: O[K] extends WritableAtom<infer _V, infer A, infer R>
+    ? (...args: A) => R
     : never;
 };
 
 type UseRecord<O> = {
   [K in keyof O]: O[K] extends WritableAtom<infer V, infer A, infer R>
-    ? (options?: UseAtomOptionsOrScope) => [V, (...args: A) => R]
+    ? () => [V, (...args: A) => R]
     : never;
 };
 
@@ -88,23 +94,43 @@ export type StoreApi<
   name: N;
 };
 
-type GetAtomFn = <V>(atom: Atom<V>, options?: UseAtomOptionsOrScope) => V;
+type GetAtomFn = <V>(
+  atom: Atom<V>,
+  store?: JotaiStore,
+  options?: UseAtomOptionsOrScope
+) => V;
 
 type SetAtomFn = <V, A extends unknown[], R>(
   atom: WritableAtom<V, A, R>,
+  store?: JotaiStore,
   options?: UseAtomOptionsOrScope
 ) => (...args: A) => R;
 
 type UseAtomFn = <V, A extends unknown[], R>(
   atom: WritableAtom<V, A, R>,
+  store?: JotaiStore,
   options?: UseAtomOptionsOrScope
 ) => [V, (...args: A) => R];
 
 export type UseStoreApi<T, E> = (options?: UseAtomOptionsOrScope) => {
-  get: GetRecord<StoreAtoms<T, E>> & { atom: GetAtomFn };
-  set: SetRecord<WritableStoreAtoms<T, E>> & { atom: SetAtomFn };
-  use: UseRecord<WritableStoreAtoms<T, E>> & { atom: UseAtomFn };
-  store: (options?: UseAtomOptionsOrScope) => JotaiStore | undefined;
+  get: GetRecord<StoreAtoms<T, E>> & { atom: <V>(atom: Atom<V>) => V };
+  read: ReadRecord<StoreAtoms<T, E>> & { atom: <V>(atom: Atom<V>) => V };
+  set: SetRecord<WritableStoreAtoms<T, E>> & {
+    atom: <V, A extends unknown[], R>(
+      atom: WritableAtom<V, A, R>
+    ) => (...args: A) => R;
+  };
+  write: WriteRecord<WritableStoreAtoms<T, E>> & {
+    atom: <V, A extends unknown[], R>(
+      atom: WritableAtom<V, A, R>
+    ) => (...args: A) => R;
+  };
+  use: UseRecord<WritableStoreAtoms<T, E>> & {
+    atom: <V, A extends unknown[], R>(
+      atom: WritableAtom<V, A, R>
+    ) => [V, (...args: A) => R];
+  };
+  store: JotaiStore | undefined;
 };
 
 export type AtomStoreApi<
@@ -138,15 +164,15 @@ const isAtom = (possibleAtom: unknown): boolean =>
   'read' in possibleAtom &&
   typeof possibleAtom.read === 'function';
 
-const withDefaultOptions = <T extends object>(
+const withStoreAndOptions = <T extends object>(
   fnRecord: T,
-  defaultOptions: UseAtomOptions
+  store: JotaiStore | undefined,
+  options: UseAtomOptions
 ): T =>
   Object.fromEntries(
     Object.entries(fnRecord).map(([key, fn]) => [
       key,
-      (options: UseAtomOptions = {}) =>
-        (fn as any)({ ...defaultOptions, ...options }),
+      () => (fn as any)(store, options),
     ])
   ) as any;
 
@@ -232,7 +258,9 @@ export const createAtomStore = <
   }
 
   const getAtoms = {} as GetRecord<MyStoreAtoms>;
+  const readAtoms = {} as ReadRecord<MyStoreAtoms>;
   const setAtoms = {} as SetRecord<MyWritableStoreAtoms>;
+  const writeAtoms = {} as WriteRecord<MyWritableStoreAtoms>;
   const useAtoms = {} as UseRecord<MyWritableStoreAtoms>;
 
   const useStore = (optionsOrScope: UseAtomOptionsOrScope = {}) => {
@@ -245,22 +273,43 @@ export const createAtomStore = <
     return store ?? contextStore;
   };
 
-  const useAtomValueWithStore: GetAtomFn = (atomConfig, optionsOrScope) => {
+  const useAtomValueWithStore: GetAtomFn = (
+    atomConfig,
+    store,
+    optionsOrScope
+  ) => {
     const options = convertScopeShorthand(optionsOrScope);
-    const store = useStore({ warnIfNoStore: false, ...options });
     return useAtomValue(atomConfig, {
       store,
       delay: options.delay ?? delayRoot,
     });
   };
 
-  const useSetAtomWithStore: SetAtomFn = (atomConfig, optionsOrScope) => {
-    const store = useStore(optionsOrScope);
+  const readAtomWithStore: GetAtomFn = (atomConfig, store, _optionsOrScope) => {
+    return (store ?? getDefaultStore()).get(atomConfig);
+  };
+
+  const useSetAtomWithStore: SetAtomFn = (
+    atomConfig,
+    store,
+    _optionsOrScope
+  ) => {
     return useSetAtom(atomConfig, { store });
   };
 
-  const useAtomWithStore: UseAtomFn = (atomConfig, optionsOrScope) => {
-    const store = useStore(optionsOrScope);
+  const writeAtomWithStore: SetAtomFn = (
+    atomConfig,
+    store,
+    _optionsOrScope
+  ) => {
+    return (...args) =>
+      (store ?? (getDefaultStore() as NonNullable<typeof store>)).set(
+        atomConfig,
+        ...args
+      );
+  };
+
+  const useAtomWithStore: UseAtomFn = (atomConfig, store, optionsOrScope) => {
     const { delay = delayRoot } = convertScopeShorthand(optionsOrScope);
     return useAtom(atomConfig, { store, delay });
   };
@@ -269,19 +318,44 @@ export const createAtomStore = <
     const atomConfig = atoms[key as keyof MyStoreAtoms];
     const isWritable: boolean = atomIsWritable[key as keyof MyStoreAtoms];
 
-    (getAtoms as any)[key] = (optionsOrScope: UseAtomOptionsOrScope = {}) =>
-      useAtomValueWithStore(atomConfig, optionsOrScope);
+    (getAtoms as any)[key] = (
+      store: JotaiStore | undefined,
+      optionsOrScope: UseAtomOptionsOrScope = {}
+    ) => useAtomValueWithStore(atomConfig, store, optionsOrScope);
+
+    (readAtoms as any)[key] = (
+      store: JotaiStore | undefined,
+      optionsOrScope: UseAtomOptionsOrScope = {}
+    ) => readAtomWithStore(atomConfig, store, optionsOrScope);
 
     if (isWritable) {
-      (setAtoms as any)[key] = (optionsOrScope: UseAtomOptionsOrScope = {}) =>
+      (setAtoms as any)[key] = (
+        store: JotaiStore | undefined,
+        optionsOrScope: UseAtomOptionsOrScope = {}
+      ) =>
         useSetAtomWithStore(
           atomConfig as WritableAtom<any, any, any>,
+          store,
           optionsOrScope
         );
 
-      (useAtoms as any)[key] = (optionsOrScope: UseAtomOptionsOrScope = {}) =>
+      (writeAtoms as any)[key] = (
+        store: JotaiStore | undefined,
+        optionsOrScope: UseAtomOptionsOrScope = {}
+      ) =>
+        writeAtomWithStore(
+          atomConfig as WritableAtom<any, any, any>,
+          store,
+          optionsOrScope
+        );
+
+      (useAtoms as any)[key] = (
+        store: JotaiStore | undefined,
+        optionsOrScope: UseAtomOptionsOrScope = {}
+      ) =>
         useAtomWithStore(
           atomConfig as WritableAtom<any, any, any>,
+          store,
           optionsOrScope
         );
     }
@@ -299,37 +373,39 @@ export const createAtomStore = <
     name,
   };
 
-  const useStoreApi: UseStoreApi<T, E> = (defaultOptions = {}) => ({
-    get: {
-      ...withDefaultOptions(getAtoms, convertScopeShorthand(defaultOptions)),
-      atom: (atomConfig, options) =>
-        useAtomValueWithStore(atomConfig, {
-          ...convertScopeShorthand(defaultOptions),
-          ...convertScopeShorthand(options),
-        }),
-    },
-    set: {
-      ...withDefaultOptions(setAtoms, convertScopeShorthand(defaultOptions)),
-      atom: (atomConfig, options) =>
-        useSetAtomWithStore(atomConfig, {
-          ...convertScopeShorthand(defaultOptions),
-          ...convertScopeShorthand(options),
-        }),
-    },
-    use: {
-      ...withDefaultOptions(useAtoms, convertScopeShorthand(defaultOptions)),
-      atom: (atomConfig, options) =>
-        useAtomWithStore(atomConfig, {
-          ...convertScopeShorthand(defaultOptions),
-          ...convertScopeShorthand(options),
-        }),
-    },
-    store: (options) =>
-      useStore({
-        ...convertScopeShorthand(defaultOptions),
-        ...convertScopeShorthand(options),
-      }),
-  });
+  const useStoreApi: UseStoreApi<T, E> = (options = {}) => {
+    const scopedOptions = convertScopeShorthand(options);
+    const store = useStore(scopedOptions);
+
+    return {
+      get: {
+        ...withStoreAndOptions(getAtoms, store, scopedOptions),
+        atom: (atomConfig) =>
+          useAtomValueWithStore(atomConfig, store, scopedOptions),
+      },
+      read: {
+        ...withStoreAndOptions(readAtoms, store, scopedOptions),
+        atom: (atomConfig) =>
+          readAtomWithStore(atomConfig, store, scopedOptions),
+      },
+      set: {
+        ...withStoreAndOptions(setAtoms, store, scopedOptions),
+        atom: (atomConfig) =>
+          useSetAtomWithStore(atomConfig, store, scopedOptions),
+      },
+      write: {
+        ...withStoreAndOptions(writeAtoms, store, scopedOptions),
+        atom: <V, A extends unknown[], R>(atomConfig: WritableAtom<V, A, R>) =>
+          writeAtomWithStore(atomConfig, store, scopedOptions),
+      },
+      use: {
+        ...withStoreAndOptions(useAtoms, store, scopedOptions),
+        atom: (atomConfig) =>
+          useAtomWithStore(atomConfig, store, scopedOptions),
+      },
+      store,
+    };
+  };
 
   return {
     [providerIndex]: Provider,
