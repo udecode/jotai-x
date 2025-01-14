@@ -1,5 +1,7 @@
 # JotaiX
 
+[Migrating from v1 to v2](#migrate-from-v1-to-v2)
+
 JotaiX is a custom extension of [Jotai](https://github.com/pmndrs/jotai), a primitive and flexible state management library for React. Jotai offers a
 minimalistic API to manage global, derived, or async states in React, solving common issues such as unnecessary
 re-renders or complex context management. JotaiX builds upon this foundation, providing enhanced utilities and patterns
@@ -244,6 +246,30 @@ const Component = () => {
     </div>
   );
 };
+```
+
+## Migrate from v1 to v2
+
+1. Return of `use<Name>Store`: `get` is renamed to `useValue`, `set` is renamed to `useSet`
+``` js
+- const name = useAppStore().get.name();
+- const setName = useAppStore().set.name();
++ const name = useAppStore().useValue.name();
++ const setName = useAppStore().useSet.name();
+```
+
+2. Return of `use<Name>Store`: `store` is no longer a function. Now it is a direct property.
+``` js
+- const store = useAppStore().store();
++ const store = useAppStore().store;
+```
+
+3. Return of `use<Name>Store`: `option` is no longer a valid parameter of `useValue` and `useSet`. To control the behavior, directly pass the options to `createAtomStore` or `use<Name>Store`.
+``` js
+- const scope1Name = useAppStore().useValue.name(scope1Options);
+- const scope2Name = useAppStore().useValue.name(scope2Options);
++ const scope1Name = useAppStore(scope1Options).useValue.name();
++ const scope2Name = useAppStore(scope2Options).useValue.name();
 ```
 
 ## Contributing
