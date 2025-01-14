@@ -72,13 +72,21 @@ The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) contai
     - Example: `const setElement = useElementStore().useSet.Element()`
   - **`use`**: Hooks for accessing and setting a state within a component, ensuring re-rendering when the state changes. See [useAtom](https://jotai.org/docs/core/use-atom).
     - Example: `const [element, setElement] = useElementStore().use.element()`
-  - **`get`**: Directly get the state. See[createStore](https://jotai.org/docs/core/store#createstore)
-    - Example: `const element = useElementStore().get.element()`
-  - **`set`**: Directly set the state. See[createStore](https://jotai.org/docs/core/store#createstore)
-    - Example: `useElementStore().set.element('div')`
+  - **`get`**: Directly get the state. Not a hook so it could be used in event handlers or other hooks, and the component won't re-render if the state changes. See [createStore](https://jotai.org/docs/core/store#createstore)
+    - Example:
+    ``` js
+      const store = useElementStore();
+      useEffect(() => { console.log(store.get.element()) }, []);
+    ```
+  - **`set`**: Directly set the state. Not a hook so it could be used in event handlers or other hooks. See [createStore](https://jotai.org/docs/core/store#createstore)
+    - Example:
+    ``` js
+      const store = useElementStore();
+      useEffect(() => { store.set.element('div') }, []);
+    ```
   - **`store`**: The [JotaiStore](https://jotai.org/docs/core/store) for the current context.
     - Example: `const store = useElementStore().store`
-  - **`subscribe`**: Subscribe to the state change. . See[createStore](https://jotai.org/docs/core/store#createstore)
+  - **`subscribe`**: Subscribe to the state change. . See [createStore](https://jotai.org/docs/core/store#createstore)
     - NOTE: The subscribed callback will fire whenever the atom state or dependent atom states change. There is no equality check.
     - Example: `useElementStore().subscribe.element((newElement) => console.log(newElement))`
 - **`<Name>Provider`**:
