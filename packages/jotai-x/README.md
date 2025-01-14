@@ -63,15 +63,22 @@ The **`options`** object can include several properties to customize the behavio
 The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) containing the following properties and methods for interacting with the store:
 
 - **`use<Name>Store`**: 
-  - A function that returns the following objects: **`get`**, **`set`**, **`use`**, where values are hooks for each state defined in the store, and **`read`**, **`write`**, **`subscribe`**, **`store`**, where values are direct read/write accessors to modify each state.
-  - **`get`**: Hooks for accessing a state within a component,  ensuring re-rendering when the state changes. See [useAtomValue](https://jotai.org/docs/core/use-atom#useatomvalue).
-  - **`set`**: Hooks for setting a state within a component. See [useSetAtom](https://jotai.org/docs/core/use-atom#usesetatom).
+  - A function that returns the following objects: **`useValue`**, **`useSet`**, **`use`**, where values are hooks for each state defined in the store, and **`get`**, **`set`**, **`subscribe`**, **`store`**, where values are direct get/set accessors to modify each state.
+  - **`useValue`**: Hooks for accessing a state within a component,  ensuring re-rendering when the state changes. See [useAtomValue](https://jotai.org/docs/core/use-atom#useatomvalue).
+    - Example: `const element = useElementStore().useValue.element()`
+  - **`useSet`**: Hooks for setting a state within a component. See [useSetAtom](https://jotai.org/docs/core/use-atom#usesetatom).
+    - Example: `const setElement = useElementStore().useSet.Element()`
   - **`use`**: Hooks for accessing and setting a state within a component, ensuring re-rendering when the state changes. See [useAtom](https://jotai.org/docs/core/use-atom).
-  - **`read`**: Direct read access to the state. See[createStore](https://jotai.org/docs/core/store#createstore)
-  - **`write`**: Direct write access to the state. See[createStore](https://jotai.org/docs/core/store#createstore)
+    - Example: `const [element, setElement] = useElementStore().use.element()`
+  - **`get`**: Directly get the state. See[createStore](https://jotai.org/docs/core/store#createstore)
+    - Example: `const element = useElementStore().get.element()`
+  - **`set`**: Directly set the state. See[createStore](https://jotai.org/docs/core/store#createstore)
+    - Example: `useElementStore().set.element('div')`
   - **`store`**: The [JotaiStore](https://jotai.org/docs/core/store) for the current context.
+    - Example: `const store = useElementStore().store`
   - **`subscribe`**: Subscribe to the state change. . See[createStore](https://jotai.org/docs/core/store#createstore)
-  - Example: `const [element, setElement] = useElementStore().use.element()`
+    - NOTE: The subscribed callback will fire whenever the atom state or dependent atom states change. There is no equality check.
+    - Example: `useElementStore().subscribe.element((newElement) => console.log(newElement))`
 - **`<Name>Provider`**:
   - The API includes dynamically generated provider components for each defined store. This allows  scoped state management within your application. More information in the next section.
 - **`<name>Store`**:
