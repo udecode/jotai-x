@@ -43,6 +43,12 @@ type UseRecord<O> = {
     : never;
 };
 
+type SubscribeRecord<O> = {
+  [K in keyof O]: O[K] extends Atom<infer V>
+    ? (callback: (newValue: V) => void) => () => void
+    : never;
+};
+
 type StoreAtomsWithoutExtend<T> = {
   [K in keyof T]: T[K] extends Atom<any> ? T[K] : SimpleWritableAtom<T[K]>;
 };
@@ -112,6 +118,12 @@ type UseAtomFn = <V, A extends unknown[], R>(
   options?: UseAtomOptionsOrScope
 ) => [V, (...args: A) => R];
 
+type SubscribeAtomFn = <V>(
+  atom: Atom<V>,
+  store?: JotaiStore,
+  options?: UseAtomOptionsOrScope
+) => (callback: (newValue: V) => void) => () => void;
+
 export type UseStoreApi<T, E> = (options?: UseAtomOptionsOrScope) => {
   get: GetRecord<StoreAtoms<T, E>> & { atom: <V>(atom: Atom<V>) => V };
   read: ReadRecord<StoreAtoms<T, E>> & { atom: <V>(atom: Atom<V>) => V };
@@ -129,6 +141,9 @@ export type UseStoreApi<T, E> = (options?: UseAtomOptionsOrScope) => {
     atom: <V, A extends unknown[], R>(
       atom: WritableAtom<V, A, R>
     ) => [V, (...args: A) => R];
+  };
+  subscribe: SubscribeRecord<StoreAtoms<T, E>> & {
+    atom: <V>(atom: Atom<V>) => (callback: (newValue: V) => void) => () => void;
   };
   store: JotaiStore | undefined;
 };
@@ -262,6 +277,7 @@ export const createAtomStore = <
   const setAtoms = {} as SetRecord<MyWritableStoreAtoms>;
   const writeAtoms = {} as WriteRecord<MyWritableStoreAtoms>;
   const useAtoms = {} as UseRecord<MyWritableStoreAtoms>;
+  const subscribeAtoms = {} as SubscribeRecord<MyStoreAtoms>;
 
   const useStore = (optionsOrScope: UseAtomOptionsOrScope = {}) => {
     const {
@@ -314,6 +330,20 @@ export const createAtomStore = <
     return useAtom(atomConfig, { store, delay });
   };
 
+  const subscribeAtomWithStore: SubscribeAtomFn = (
+    atomConfig,
+    store,
+    _optionsOrScope
+  ) => {
+    return (callback) => {
+      store ??= getDefaultStore();
+      const unsubscribe = store.sub(atomConfig, () => {
+        callback(store!.get(atomConfig));
+      });
+      return () => unsubscribe();
+    };
+  };
+
   for (const key of Object.keys(atoms)) {
     const atomConfig = atoms[key as keyof MyStoreAtoms];
     const isWritable: boolean = atomIsWritable[key as keyof MyStoreAtoms];
@@ -327,6 +357,11 @@ export const createAtomStore = <
       store: JotaiStore | undefined,
       optionsOrScope: UseAtomOptionsOrScope = {}
     ) => readAtomWithStore(atomConfig, store, optionsOrScope);
+
+    (subscribeAtoms as any)[key] = (
+      store: JotaiStore | undefined,
+      optionsOrScope: UseAtomOptionsOrScope = {}
+    ) => subscribeAtomWithStore(atomConfig, store, optionsOrScope);
 
     if (isWritable) {
       (setAtoms as any)[key] = (
@@ -402,6 +437,11 @@ export const createAtomStore = <
         ...withStoreAndOptions(useAtoms, store, scopedOptions),
         atom: (atomConfig) =>
           useAtomWithStore(atomConfig, store, scopedOptions),
+      },
+      subscribe: {
+        ...withStoreAndOptions(subscribeAtoms, store, scopedOptions),
+        atom: <V>(atomConfig: Atom<V>) =>
+          subscribeAtomWithStore(atomConfig, store, scopedOptions),
       },
       store,
     };
