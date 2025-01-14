@@ -67,28 +67,28 @@ The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) contai
 - **`use<Name>Store`**: 
   - A function that returns the following objects: **`useValue`**, **`useSet`**, **`use`**, where values are hooks for each state defined in the store, and **`get`**, **`set`**, **`subscribe`**, **`store`**, where values are direct get/set accessors to modify each state.
   - **`useValue`**: Hooks for accessing a state within a component,  ensuring re-rendering when the state changes. See [useAtomValue](https://jotai.org/docs/core/use-atom#useatomvalue).
-    - Example: `const element = useElementStore().useValue.element()`
+    > Example: `const element = useElementStore().useValue.element()`
   - **`useSet`**: Hooks for setting a state within a component. See [useSetAtom](https://jotai.org/docs/core/use-atom#usesetatom).
-    - Example: `const setElement = useElementStore().useSet.Element()`
+    > Example: `const setElement = useElementStore().useSet.Element()`
   - **`use`**: Hooks for accessing and setting a state within a component, ensuring re-rendering when the state changes. See [useAtom](https://jotai.org/docs/core/use-atom).
-    - Example: `const [element, setElement] = useElementStore().use.element()`
+    > Example: `const [element, setElement] = useElementStore().use.element()`
   - **`get`**: Directly get the state. Not a hook so it could be used in event handlers or other hooks, and the component won't re-render if the state changes. See [createStore](https://jotai.org/docs/core/store#createstore)
-    - Example:
-    ``` js
-      const store = useElementStore();
-      useEffect(() => { console.log(store.get.element()) }, []);
-    ```
+    > Example:
+      ``` js
+        const store = useElementStore();
+        useEffect(() => { console.log(store.get.element()) }, []);
+      ```
   - **`set`**: Directly set the state. Not a hook so it could be used in event handlers or other hooks. See [createStore](https://jotai.org/docs/core/store#createstore)
-    - Example:
-    ``` js
-      const store = useElementStore();
-      useEffect(() => { store.set.element('div') }, []);
-    ```
+    > Example:
+      ``` js
+        const store = useElementStore();
+        useEffect(() => { store.set.element('div') }, []);
+      ```
   - **`store`**: The [JotaiStore](https://jotai.org/docs/core/store) for the current context.
-    - Example: `const store = useElementStore().store`
+    > Example: `const store = useElementStore().store`
   - **`subscribe`**: Subscribe to the state change. . See [createStore](https://jotai.org/docs/core/store#createstore)
     - NOTE: The subscribed callback will fire whenever the atom state or dependent atom states change. There is no equality check.
-    - Example: `useElementStore().subscribe.element((newElement) => console.log(newElement))`
+    > Example: `useElementStore().subscribe.element((newElement) => console.log(newElement))`
 - **`<Name>Provider`**:
   - The API includes dynamically generated provider components for each defined store. This allows  scoped state management within your application. More information in the next section.
 - **`<name>Store`**:
@@ -123,7 +123,7 @@ const { useUserStore } = createAtomStore({
   }),
 });
 
-const intro = useAppStore().get.intro();
+const intro = useAppStore().useValue.intro();
 ```
 
 #### Externally Defined Derived Atoms
@@ -136,7 +136,7 @@ const { userStore, useUserStore } = createAtomStore({
 }, { name: 'user' });
 
 const introAtom = atom((get) => `My name is ${get(userStore.atom.username)}`);
-const intro = useUserStore().get.atom(introAtom);
+const intro = useUserStore().useValue.atom(introAtom);
 ```
 
 ### Example Usage
@@ -245,7 +245,7 @@ const Component = () => {
   // Here, we get the state from the parent scope
   const [name, setName] = useAppStore('parent').use.name();
   // Here, we get the state from the closest scope (default)
-  const onUpdateName = useAppStore().get.onUpdateName();
+  const onUpdateName = useAppStore().useValue.onUpdateName();
 
   return (
     <div>
