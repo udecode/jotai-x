@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { PropsWithChildren } from 'react';
 import { createStore } from 'jotai/vanilla';
 
 import { JotaiStore, SimpleWritableAtomRecord } from './createAtomStore';
@@ -44,13 +44,13 @@ export const useAtomStore = (
   return store;
 };
 
-export type ProviderProps<T extends object> = Partial<T> & {
-  store?: JotaiStore;
-  scope?: string;
-  initialValues?: Partial<T>;
-  resetKey?: any;
-  children: React.ReactNode;
-};
+export type ProviderProps<T extends object> = Partial<T> &
+  PropsWithChildren<{
+    store?: JotaiStore;
+    scope?: string;
+    initialValues?: Partial<T>;
+    resetKey?: any;
+  }>;
 
 export const HydrateAtoms = <T extends object>({
   initialValues,
