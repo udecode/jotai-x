@@ -294,13 +294,16 @@ const Component = () => {
 - const name = useAppStore().get.name();
 - const setName = useAppStore().set.name();
 - const [name, setName] = useAppStore().use.name();
-+ const name = useAppStore().useNameValue();
-+ const setName = useAppStore().useSetName();
-+ const [name, setName] = useAppStore().useNameState();
+
++ const appStore = useAppStore();
++ const name = appStore.useNameValue();
++ const setName = appStore.useSetName();
++ const [name, setName] = appStore.useNameState();
+
 + // alternative
-+ const name = useAppStore().useValue('name');
-+ const setName = useAppStore().useSet('name');
-+ const [name, setName] = useAppStore().useState('name');
++ const name = appStore.useValue('name');
++ const setName = appStore.useSet('name');
++ const [name, setName] = appStore.useState('name');
 ```
 
 2. Rename `.atom()` APIs:
@@ -308,15 +311,20 @@ const Component = () => {
 - const atomValue = useAppStore().get.atom(atomConfig);
 - const setAtomValue = useAppStore().set.atom(atomConfig);
 - const [atomValue, setAtomValue] = useAppStore().use.atom(atomConfig);
-+ const atomValue = useAppStore().useAtomValue(atomConfig);
-+ const setAtomValue = useAppStore().useSetAtom(atomConfig);
-+ const [atomValue, setAtomValue] = useAppStore().useAtomState(atomConfig);
+
++ const appStore = useAppStore();
++ const atomValue = appStore.useAtomValue(atomConfig);
++ const setAtomValue = appStore.useSetAtom(atomConfig);
++ const [atomValue, setAtomValue] = appStore.useAtomState(atomConfig);
 ```
-NOTE: `useValue('atom')` and `useSet('atom')` and `useState('atom')` are not supported. They are only valid if the key "atom" is presented in the store. On the other hand, `useAtomValue()`, `useSetAtom()`, and `useAtomState()` cannot access the state if the key "atom" is presented in the store. Try to avoid using the key "atom".
+NOTE: Try to avoid using the key "atom" as the store state key because
+  1. `useValue('atom')` and `useSet('atom')` and `useState('atom')` are not supported. They are only valid if the key "atom" is presented in the store.
+  2. On the other hand, `useAtomValue()`, `useSetAtom()`, and `useAtomState()` cannot access the state if the key "atom" is presented in the store. 
 
 3. Return of `use<Name>Store`: `store` is no longer a function. Now it is a direct property.
 ``` diff
 - const store = useAppStore().store();
+
 + const appStore = useAppStore();
 + const jotaiStore = appStore.store;
 ```
@@ -325,7 +333,10 @@ NOTE: `useValue('atom')` and `useSet('atom')` and `useState('atom')` are not sup
 ``` diff
 - const scope1Name = useAppStore().useValue.name(scope1Options);
 - const scope2Name = useAppStore().useValue.name(scope2Options);
-+ const scope1Name = useAppStore(scope1Options).useNameValue();
+
++ const scope1AppStore = useAppStore(scope1Options);
++ const scope1Name = scope1AppStore.useNameValue();
++ const scope2AppStore = useAppStore(scope2Options);
 + const scope2Name = useAppStore(scope2Options).useNameValue();
 ```
 
