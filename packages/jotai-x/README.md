@@ -337,7 +337,7 @@ NOTE: Try to avoid using the key "atom" as the store state key because
 + const scope1AppStore = useAppStore(scope1Options);
 + const scope1Name = scope1AppStore.useNameValue();
 + const scope2AppStore = useAppStore(scope2Options);
-+ const scope2Name = useAppStore(scope2Options).useNameValue();
++ const scope2Name = scope2AppStore.useNameValue();
 ```
 
 ## Contributing
