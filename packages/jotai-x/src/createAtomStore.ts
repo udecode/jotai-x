@@ -2,8 +2,6 @@ import React from 'react';
 import { getDefaultStore, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useHydrateAtoms } from 'jotai/utils';
 
-
-
 import { atomWithFn } from './atomWithFn';
 import { createAtomProvider, useAtomStore } from './createAtomProvider';
 
