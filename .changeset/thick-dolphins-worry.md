@@ -1,5 +1,5 @@
 ---
-'jotai-x': feat
+'jotai-x': major
 ---
 
 1. Rename `get` to `useValue`, `set` to `useSet`, `use` to `useState`.
