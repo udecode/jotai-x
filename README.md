@@ -65,34 +65,55 @@ The **`options`** object can include several properties to customize the behavio
 The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) containing the following properties and methods for interacting with the store:
 
 - **`use<Name>Store`**: 
-  - A function that returns the following objects: **`useValue`**, **`useSet`**, **`use`**, where values are hooks for each state defined in the store, and **`get`**, **`set`**, **`subscribe`**, **`store`**, where values are direct get/set accessors to modify each state.
+  - A function that returns the following objects: **`useValue`**, **`useSet`**, **`useState`**, where values are hooks for each state defined in the store, and **`get`**, **`set`**, **`subscribe`**, **`store`**, where values are direct get/set accessors to modify each state.
   - **`useValue`**: Hooks for accessing a state within a component,  ensuring re-rendering when the state changes. See [useAtomValue](https://jotai.org/docs/core/use-atom#useatomvalue).
-    > Example: `const element = useElementStore().useValue.element()`
+    ``` js
+      const store = useElementStore();
+      const element = store.useElementValue();
+      // alternative
+      const element = useElementStore().useValue('element');
+    ```
   - **`useSet`**: Hooks for setting a state within a component. See [useSetAtom](https://jotai.org/docs/core/use-atom#usesetatom).
-    > Example: `const setElement = useElementStore().useSet.Element()`
-  - **`use`**: Hooks for accessing and setting a state within a component, ensuring re-rendering when the state changes. See [useAtom](https://jotai.org/docs/core/use-atom).
-    > Example: `const [element, setElement] = useElementStore().use.element()`
+    ``` js
+      const store = useElementStore();
+      const element = store.useSetElement();
+      // alternative
+      const element = useElementStore().useSet('element');
+    ```
+  - **`useState`**: Hooks for accessing and setting a state within a component, ensuring re-rendering when the state changes. See [useAtom](https://jotai.org/docs/core/use-atom).
+    ``` js
+      const store = useElementStore();
+      const element = store.useElementState();
+      // alternative
+      const element = useElementStore().useState('element');
+    ```
   - **`get`**: Directly get the state. Not a hook so it could be used in event handlers or other hooks, and the component won't re-render if the state changes. See [createStore](https://jotai.org/docs/core/store#createstore)
-    > Example:
-      ``` js
-        const store = useElementStore();
-        useEffect(() => { console.log(store.get.element()) }, []);
-      ```
+    ``` js
+      const store = useElementStore();
+      useEffect(() => { console.log(store.getElement()) }, []);
+      // alternative
+      useEffect(() => { console.log(store.get('element')) }, []);
+    ```
   - **`set`**: Directly set the state. Not a hook so it could be used in event handlers or other hooks. See [createStore](https://jotai.org/docs/core/store#createstore)
-    > Example:
-      ``` js
-        const store = useElementStore();
-        useEffect(() => { store.set.element('div') }, []);
-      ```
-  - **`store`**: The [JotaiStore](https://jotai.org/docs/core/store) for the current context.
-    > Example: `const store = useElementStore().store`
+    ``` js
+      const store = useElementStore();
+      useEffect(() => { store.setElement('div') }, []);
+      // alternative
+      useEffect(() => { store.set('element', 'div') }, []);
+    ```
   - **`subscribe`**: Subscribe to the state change. . See [createStore](https://jotai.org/docs/core/store#createstore)
     - NOTE: The subscribed callback will fire whenever the atom state or dependent atom states change. There is no equality check.
-    > Example:
-      ``` js
-        const store = useElementStore();
-        useEffect(() => store.subscribe.element((newElement) => console.log(newElement)), []);
-      ```
+    ``` js
+      const store = useElementStore();
+      useEffect(() => store.subscribeElement((newElement) => console.log(newElement)), []);
+      // alternative
+      useEffect(() => store.subscribe('element', (newElement) => console.log(newElement)), []);
+    ```
+  - **`store`**: The [JotaiStore](https://jotai.org/docs/core/store) for the current context.
+    ``` js
+      const store = useElementStore();
+      const jotaiStore = store.store;
+    ```
 - **`<Name>Provider`**:
   - The API includes dynamically generated provider components for each defined store. This allows  scoped state management within your application. More information in the next section.
 - **`<name>Store`**:
@@ -127,12 +148,14 @@ const { useUserStore } = createAtomStore({
   }),
 });
 
-const intro = useAppStore().useValue.intro();
+const userStore = useUserStore();
+const intro = userStore.useIntroValue();
 ```
 
 #### Externally Defined Derived Atoms
 
-Derived atoms can also be defined externally by accessing the store's atoms through the `<name>Store` API. Externally defined atoms can be accessed through the store using the special `use<Name>Store().{get,set,use}.atom` hooks.
+Derived atoms can also be defined externally by accessing the store's atoms through the `<name>Store` API. Externally defined atoms can be accessed through the store using special hooks:
+`useAtomValue`, `useSetAtom`, `useAtomState`, `getAtom`, `setAtom`, `subscribeAtom`.
 
 ```ts
 const { userStore, useUserStore } = createAtomStore({
@@ -140,7 +163,9 @@ const { userStore, useUserStore } = createAtomStore({
 }, { name: 'user' });
 
 const introAtom = atom((get) => `My name is ${get(userStore.atom.username)}`);
-const intro = useUserStore().useValue.atom(introAtom);
+
+const userStore = useUserStore();
+const intro = userStore.useAtomValue(introAtom);
 ```
 
 ### Example Usage
@@ -186,20 +211,20 @@ const App = () => {
 };
 
 const Component = () => {
-  const store = useAppStore();
-  const [name, setName] = store.use.name();
-  const onUpdateName = store.get.onUpdateName();
+  const appStore = useAppStore();
+  const [name, setName] = store.useNameState();
+  const onUpdateName = store.useOnUpdateNameValue();
 
   useEffect(() => store.subscribe.name((newName) => {
     console.log(`Name updated to: ${newName}`);
-    // An alternative to `store.use.name()`, won't rerender when the state changes
-    assert.ok(newName === store.read.name());
+    // An alternative to `appStore.useNameState()`, won't rerender when the state changes
+    assert.ok(newName === appStore.getName());
     if (newName.includes('#')) {
-      // Equivalent to `setName`
-      store.write.name('invalid');
+      // Equivalent to `appStore.useSetName()`'s return
+      appStore.setName('invalid');
       onUpdateName('invalid');
     }
-  }), [store])
+  }), [appStore])
   
   return (
     <div>
@@ -247,9 +272,11 @@ const App = () => {
 // Accessing state from the specified scope.
 const Component = () => {
   // Here, we get the state from the parent scope
-  const [name, setName] = useAppStore('parent').use.name();
+  const parentAppStore = useAppStore('parent');
+  const [name, setName] = parentScope.useNameState();
   // Here, we get the state from the closest scope (default)
-  const onUpdateName = useAppStore().useValue.onUpdateName();
+  const appStore = useAppStore();
+  const onUpdateName = appStore.useOnUpdateNameValue();
 
   return (
     <div>
@@ -262,26 +289,44 @@ const Component = () => {
 
 ## Migrate from v1 to v2
 
-1. Return of `use<Name>Store`: `get` is renamed to `useValue`, `set` is renamed to `useSet`
+1. Return of `use<Name>Store`: `get` is renamed to `use<Key>Value`, `set` is renamed to `useSet<Key>`, `use` is renamed to `useState`.
 ``` diff
 - const name = useAppStore().get.name();
 - const setName = useAppStore().set.name();
-+ const name = useAppStore().useValue.name();
-+ const setName = useAppStore().useSet.name();
+- const [name, setName] = useAppStore().use.name();
++ const name = useAppStore().useNameValue();
++ const setName = useAppStore().useSetName();
++ const [name, setName] = useAppStore().useNameState();
++ // alternative
++ const name = useAppStore().useValue('name');
++ const setName = useAppStore().useSet('name');
++ const [name, setName] = useAppStore().useState('name');
 ```
 
-2. Return of `use<Name>Store`: `store` is no longer a function. Now it is a direct property.
+2. Rename `.atom()` APIs:
+``` diff
+- const atomValue = useAppStore().get.atom(atomConfig);
+- const setAtomValue = useAppStore().set.atom(atomConfig);
+- const [atomValue, setAtomValue] = useAppStore().use.atom(atomConfig);
++ const atomValue = useAppStore().useAtomValue(atomConfig);
++ const setAtomValue = useAppStore().useSetAtom(atomConfig);
++ const [atomValue, setAtomValue] = useAppStore().useAtomState(atomConfig);
+```
+NOTE: `useValue('atom')` and `useSet('atom')` and `useState('atom')` are not supported. They are only valid if the key "atom" is presented in the store. On the other hand, `useAtomValue()`, `useSetAtom()`, and `useAtomState()` cannot access the state if the key "atom" is presented in the store. Try to avoid using the key "atom".
+
+3. Return of `use<Name>Store`: `store` is no longer a function. Now it is a direct property.
 ``` diff
 - const store = useAppStore().store();
-+ const store = useAppStore().store;
++ const appStore = useAppStore();
++ const jotaiStore = appStore.store;
 ```
 
-3. Return of `use<Name>Store`: `option` is no longer a valid parameter of `useValue` and `useSet`. To control the behavior, directly pass the options to `createAtomStore` or `use<Name>Store`.
+4. Return of `use<Name>Store`: `option` is no longer a valid parameter of `useValue` and `useSet`. To control the behavior, directly pass the options to `createAtomStore` or `use<Name>Store`.
 ``` diff
 - const scope1Name = useAppStore().useValue.name(scope1Options);
 - const scope2Name = useAppStore().useValue.name(scope2Options);
-+ const scope1Name = useAppStore(scope1Options).useValue.name();
-+ const scope2Name = useAppStore(scope2Options).useValue.name();
++ const scope1Name = useAppStore(scope1Options).useNameValue();
++ const scope2Name = useAppStore(scope2Options).useNameValue();
 ```
 
 ## Contributing

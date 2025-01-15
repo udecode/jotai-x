@@ -28,8 +28,20 @@ describe('createAtomStore', () => {
       createAtomStore(initialTestStoreValue, { name: 'myTestStore' as const });
 
     const ReadOnlyConsumer = () => {
-      const name = useMyTestStoreStore().useValue.name();
-      const age = useMyTestStoreStore().useValue.age();
+      const name = useMyTestStoreStore().useNameValue();
+      const age = useMyTestStoreStore().useAgeValue();
+
+      return (
+        <div>
+          <span>{name}</span>
+          <span>{age}</span>
+        </div>
+      );
+    };
+
+    const ReadOnlyConsumerWithKeyParam = () => {
+      const name = useMyTestStoreStore().useValue('name');
+      const age = useMyTestStoreStore().useValue('age');
 
       return (
         <div>
@@ -42,7 +54,17 @@ describe('createAtomStore', () => {
     const WRITE_ONLY_CONSUMER_AGE = 99;
 
     const WriteOnlyConsumer = () => {
-      const setAge = useMyTestStoreStore().useSet.age();
+      const setAge = useMyTestStoreStore().useSetAge();
+
+      return (
+        <button type="button" onClick={() => setAge(WRITE_ONLY_CONSUMER_AGE)}>
+          consumerSetAge
+        </button>
+      );
+    };
+
+    const WriteOnlyConsumerWithKeyParam = () => {
+      const setAge = useMyTestStoreStore().useSet('age');
 
       return (
         <button type="button" onClick={() => setAge(WRITE_ONLY_CONSUMER_AGE)}>
@@ -61,8 +83,29 @@ describe('createAtomStore', () => {
       const store = useMyTestStoreStore();
 
       React.useEffect(() => {
-        const unsubscribeName = store.subscribe.name(subName);
-        const unsubscribeAge = store.subscribe.age(subAge);
+        const unsubscribeName = store.subscribeName(subName);
+        const unsubscribeAge = store.subscribeAge(subAge);
+        return () => {
+          unsubscribeName();
+          unsubscribeAge();
+        };
+      }, [store, subName, subAge]);
+
+      return null;
+    };
+
+    const SubscribeConsumerWithKeyParam = ({
+      subName,
+      subAge,
+    }: {
+      subName: (newName: string) => void;
+      subAge: (newAge: number) => void;
+    }) => {
+      const store = useMyTestStoreStore();
+
+      React.useEffect(() => {
+        const unsubscribeName = store.subscribe('name', subName);
+        const unsubscribeAge = store.subscribe('age', subAge);
         return () => {
           unsubscribeName();
           unsubscribeAge();
@@ -112,8 +155,27 @@ describe('createAtomStore', () => {
 
     const BecomeFriendsUseValue = () => {
       // Make sure both of these are actual functions, not wrapped functions
-      const becomeFriends1 = useMyTestStoreStore().useValue.becomeFriends();
-      const becomeFriends2 = useMyTestStoreStore().useValue.atom(
+      const becomeFriends1 = useMyTestStoreStore().useBecomeFriendsValue();
+      const becomeFriends2 = useMyTestStoreStore().useAtomValue(
+        myTestStoreStore.atom.becomeFriends
+      );
+
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            becomeFriends1();
+            becomeFriends2();
+          }}
+        >
+          Become Friends
+        </button>
+      );
+    };
+
+    const BecomeFriendsUseValueWithKeyParam = () => {
+      const becomeFriends1 = useMyTestStoreStore().useValue('becomeFriends');
+      const becomeFriends2 = useMyTestStoreStore().useAtomValue(
         myTestStoreStore.atom.becomeFriends
       );
 
@@ -138,8 +200,24 @@ describe('createAtomStore', () => {
         <button
           type="button"
           onClick={() => {
-            store.get.becomeFriends()();
-            store.get.atom(myTestStoreStore.atom.becomeFriends)();
+            store.getBecomeFriends()();
+            store.getAtom(myTestStoreStore.atom.becomeFriends)();
+          }}
+        >
+          Become Friends
+        </button>
+      );
+    };
+
+    const BecomeFriendsGetWithKeyParam = () => {
+      const store = useMyTestStoreStore();
+
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            store.get('becomeFriends')();
+            store.getAtom(myTestStoreStore.atom.becomeFriends)();
           }}
         >
           Become Friends
@@ -148,7 +226,25 @@ describe('createAtomStore', () => {
     };
 
     const BecomeFriendsUseSet = () => {
-      const setBecomeFriends = useMyTestStoreStore().useSet.becomeFriends();
+      const setBecomeFriends = useMyTestStoreStore().useSetBecomeFriends();
+      const [becameFriends, setBecameFriends] = React.useState(false);
+
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => setBecomeFriends(() => setBecameFriends(true))}
+          >
+            Change Callback
+          </button>
+
+          <div>useSetBecameFriends: {becameFriends.toString()}</div>
+        </>
+      );
+    };
+
+    const BecomeFriendsUseSetWithKeyParam = () => {
+      const setBecomeFriends = useMyTestStoreStore().useSet('becomeFriends');
       const [becameFriends, setBecameFriends] = React.useState(false);
 
       return (
@@ -172,8 +268,25 @@ describe('createAtomStore', () => {
         <>
           <button
             type="button"
+            onClick={() => store.setBecomeFriends(() => setBecameFriends(true))}
+          >
+            Change Callback
+          </button>
+
+          <div>setBecameFriends: {becameFriends.toString()}</div>
+        </>
+      );
+    };
+
+    const BecomeFriendsSetWithKeyParam = () => {
+      const store = useMyTestStoreStore();
+      const [becameFriends, setBecameFriends] = React.useState(false);
+      return (
+        <>
+          <button
+            type="button"
             onClick={() =>
-              store.set.becomeFriends(() => setBecameFriends(true))
+              store.set('becomeFriends', () => setBecameFriends(true))
             }
           >
             Change Callback
@@ -184,8 +297,28 @@ describe('createAtomStore', () => {
       );
     };
 
-    const BecomeFriendsUse = () => {
-      const [, setBecomeFriends] = useMyTestStoreStore().use.becomeFriends();
+    const BecomeFriendsUseState = () => {
+      const [, setBecomeFriends] =
+        useMyTestStoreStore().useBecomeFriendsState();
+      const [becameFriends, setBecameFriends] = React.useState(false);
+
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => setBecomeFriends(() => setBecameFriends(true))}
+          >
+            Change Callback
+          </button>
+
+          <div>useBecameFriends: {becameFriends.toString()}</div>
+        </>
+      );
+    };
+
+    const BecomeFriendsUseStateWithKeyParam = () => {
+      const [, setBecomeFriends] =
+        useMyTestStoreStore().useState('becomeFriends');
       const [becameFriends, setBecameFriends] = React.useState(false);
 
       return (
@@ -203,14 +336,25 @@ describe('createAtomStore', () => {
     };
 
     beforeEach(() => {
-      renderHook(() => useMyTestStoreStore().useSet.name()(INITIAL_NAME));
-      renderHook(() => useMyTestStoreStore().useSet.age()(INITIAL_AGE));
+      renderHook(() => useMyTestStoreStore().useSetName()(INITIAL_NAME));
+      renderHook(() => useMyTestStoreStore().useSetAge()(INITIAL_AGE));
     });
 
     it('passes default values from provider to consumer', () => {
       const { getByText } = render(
         <MyTestStoreProvider>
           <ReadOnlyConsumer />
+        </MyTestStoreProvider>
+      );
+
+      expect(getByText(INITIAL_NAME)).toBeInTheDocument();
+      expect(getByText(INITIAL_AGE)).toBeInTheDocument();
+    });
+
+    it('passes default values from provider to consumer with key param', () => {
+      const { getByText } = render(
+        <MyTestStoreProvider>
+          <ReadOnlyConsumerWithKeyParam />
         </MyTestStoreProvider>
       );
 
@@ -229,10 +373,37 @@ describe('createAtomStore', () => {
       expect(getByText('94')).toBeInTheDocument();
     });
 
+    it('passes non-default values from provider to consumer with key param', () => {
+      const { getByText } = render(
+        <MyTestStoreProvider name="Jane" age={94}>
+          <ReadOnlyConsumerWithKeyParam />
+        </MyTestStoreProvider>
+      );
+
+      expect(getByText('Jane')).toBeInTheDocument();
+      expect(getByText('94')).toBeInTheDocument();
+    });
+
     it('propagates updates from provider to consumer', () => {
       const { getByText } = render(
         <MutableProvider>
           <ReadOnlyConsumer />
+        </MutableProvider>
+      );
+
+      expect(getByText(INITIAL_NAME)).toBeInTheDocument();
+      expect(getByText(MUTABLE_PROVIDER_INITIAL_AGE)).toBeInTheDocument();
+
+      act(() => getByText('providerSetAge').click());
+
+      expect(getByText(INITIAL_NAME)).toBeInTheDocument();
+      expect(getByText(MUTABLE_PROVIDER_NEW_AGE)).toBeInTheDocument();
+    });
+
+    it('propagates updates from provider to consumer with key param', () => {
+      const { getByText } = render(
+        <MutableProvider>
+          <ReadOnlyConsumerWithKeyParam />
         </MutableProvider>
       );
 
@@ -262,11 +433,55 @@ describe('createAtomStore', () => {
       expect(getByText(WRITE_ONLY_CONSUMER_AGE)).toBeInTheDocument();
     });
 
+    it('propagates updates between consumers with key param', () => {
+      const { getByText } = render(
+        <MyTestStoreProvider>
+          <ReadOnlyConsumerWithKeyParam />
+          <WriteOnlyConsumerWithKeyParam />
+        </MyTestStoreProvider>
+      );
+
+      expect(getByText(INITIAL_NAME)).toBeInTheDocument();
+      expect(getByText(INITIAL_AGE)).toBeInTheDocument();
+
+      act(() => getByText('consumerSetAge').click());
+
+      expect(getByText(INITIAL_NAME)).toBeInTheDocument();
+      expect(getByText(WRITE_ONLY_CONSUMER_AGE)).toBeInTheDocument();
+    });
+
     it('prefers the most recent update', () => {
       const { getByText } = render(
         <MutableProvider>
           <ReadOnlyConsumer />
           <WriteOnlyConsumer />
+        </MutableProvider>
+      );
+
+      expect(getByText(INITIAL_NAME)).toBeInTheDocument();
+      expect(getByText(MUTABLE_PROVIDER_INITIAL_AGE)).toBeInTheDocument();
+
+      act(() => getByText('consumerSetAge').click());
+
+      expect(getByText(INITIAL_NAME)).toBeInTheDocument();
+      expect(getByText(WRITE_ONLY_CONSUMER_AGE)).toBeInTheDocument();
+
+      act(() => getByText('providerSetAge').click());
+
+      expect(getByText(INITIAL_NAME)).toBeInTheDocument();
+      expect(getByText(MUTABLE_PROVIDER_NEW_AGE)).toBeInTheDocument();
+
+      act(() => getByText('consumerSetAge').click());
+
+      expect(getByText(INITIAL_NAME)).toBeInTheDocument();
+      expect(getByText(WRITE_ONLY_CONSUMER_AGE)).toBeInTheDocument();
+    });
+
+    it('prefers the most recent update with key param', () => {
+      const { getByText } = render(
+        <MutableProvider>
+          <ReadOnlyConsumerWithKeyParam />
+          <WriteOnlyConsumerWithKeyParam />
         </MutableProvider>
       );
 
@@ -318,10 +533,51 @@ describe('createAtomStore', () => {
       expect(subAge).toHaveBeenNthCalledWith(3, WRITE_ONLY_CONSUMER_AGE);
     });
 
+    it('can subscribe with key param', () => {
+      const subName = jest.fn();
+      const subAge = jest.fn();
+      const { getByText } = render(
+        <MutableProvider>
+          <SubscribeConsumerWithKeyParam subName={subName} subAge={subAge} />
+          <WriteOnlyConsumerWithKeyParam />
+        </MutableProvider>
+      );
+
+      expect(subName).toHaveBeenCalledTimes(0);
+      expect(subAge).toHaveBeenCalledTimes(0);
+
+      act(() => getByText('consumerSetAge').click());
+
+      expect(subName).toHaveBeenCalledTimes(0);
+      expect(subAge).toHaveBeenNthCalledWith(1, WRITE_ONLY_CONSUMER_AGE);
+
+      act(() => getByText('providerSetAge').click());
+
+      expect(subName).toHaveBeenCalledTimes(0);
+      expect(subAge).toHaveBeenNthCalledWith(2, MUTABLE_PROVIDER_NEW_AGE);
+
+      act(() => getByText('consumerSetAge').click());
+
+      expect(subName).toHaveBeenCalledTimes(0);
+      expect(subAge).toHaveBeenNthCalledWith(3, WRITE_ONLY_CONSUMER_AGE);
+    });
+
     it('provides and useValue of functions', () => {
       const { getByText } = render(
         <BecomeFriendsProvider>
           <BecomeFriendsUseValue />
+        </BecomeFriendsProvider>
+      );
+
+      expect(getByText('becameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('becameFriends: true')).toBeInTheDocument();
+    });
+
+    it('provides and useValue of functions with key param', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsUseValueWithKeyParam />
         </BecomeFriendsProvider>
       );
 
@@ -342,11 +598,37 @@ describe('createAtomStore', () => {
       expect(getByText('becameFriends: true')).toBeInTheDocument();
     });
 
+    it('provides and get functions with key param', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsGetWithKeyParam />
+        </BecomeFriendsProvider>
+      );
+
+      expect(getByText('becameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('becameFriends: true')).toBeInTheDocument();
+    });
+
     it('useSet of functions', () => {
       const { getByText } = render(
         <BecomeFriendsProvider>
           <BecomeFriendsUseSet />
           <BecomeFriendsUseValue />
+        </BecomeFriendsProvider>
+      );
+
+      act(() => getByText('Change Callback').click());
+      expect(getByText('useSetBecameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('useSetBecameFriends: true')).toBeInTheDocument();
+    });
+
+    it('useSet of functions with key param', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsUseSetWithKeyParam />
+          <BecomeFriendsUseValueWithKeyParam />
         </BecomeFriendsProvider>
       );
 
@@ -370,11 +652,39 @@ describe('createAtomStore', () => {
       expect(getByText('setBecameFriends: true')).toBeInTheDocument();
     });
 
-    it('uses functions', () => {
+    it('set of functions with key param', () => {
       const { getByText } = render(
         <BecomeFriendsProvider>
-          <BecomeFriendsUse />
+          <BecomeFriendsSetWithKeyParam />
+          <BecomeFriendsUseValueWithKeyParam />
+        </BecomeFriendsProvider>
+      );
+
+      act(() => getByText('Change Callback').click());
+      expect(getByText('setBecameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('setBecameFriends: true')).toBeInTheDocument();
+    });
+
+    it('use state functions', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsUseState />
           <BecomeFriendsUseValue />
+        </BecomeFriendsProvider>
+      );
+
+      act(() => getByText('Change Callback').click());
+      expect(getByText('useBecameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('useBecameFriends: true')).toBeInTheDocument();
+    });
+
+    it('use state functions with key param', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsUseStateWithKeyParam />
+          <BecomeFriendsUseValueWithKeyParam />
         </BecomeFriendsProvider>
       );
 
@@ -398,7 +708,7 @@ describe('createAtomStore', () => {
       });
 
     const ReadOnlyConsumer = ({ scope }: { scope: string }) => {
-      const age = useMyScopedTestStoreStore({ scope }).useValue.age();
+      const age = useMyScopedTestStoreStore({ scope }).useAgeValue();
 
       return (
         <div>
@@ -412,7 +722,7 @@ describe('createAtomStore', () => {
     }: {
       scope: string;
     }) => {
-      const age = useMyScopedTestStoreStore(scope).useValue.age();
+      const age = useMyScopedTestStoreStore(scope).useAgeValue();
 
       return (
         <div>
@@ -497,7 +807,7 @@ describe('createAtomStore', () => {
       });
 
     const FirstReadOnlyConsumer = () => {
-      const name = useMyFirstTestStoreStore().useValue.name();
+      const name = useMyFirstTestStoreStore().useNameValue();
 
       return (
         <div>
@@ -507,7 +817,7 @@ describe('createAtomStore', () => {
     };
 
     const SecondReadOnlyConsumer = () => {
-      const age = useMySecondTestStoreStore().useValue.age();
+      const age = useMySecondTestStoreStore().useAgeValue();
 
       return (
         <div>
@@ -553,7 +863,7 @@ describe('createAtomStore', () => {
     );
 
     const ReadOnlyConsumer = () => {
-      const bio = useUserStore().useValue.bio();
+      const bio = useUserStore().useBioValue();
 
       return <div>{bio}</div>;
     };
@@ -564,17 +874,27 @@ describe('createAtomStore', () => {
     });
 
     it('includes extended atom in get hooks', () => {
-      const { result } = renderHook(() => useUserStore().useValue.bio());
+      const { result } = renderHook(() => useUserStore().useBioValue());
       expect(result.current).toBe('Jane is 98 years old');
     });
 
     it('does not include read-only extended atom in set hooks', () => {
-      const { result } = renderHook(() => Object.keys(useUserStore().set));
+      const { result } = renderHook(() =>
+        Object.keys(useUserStore()).map((key) => {
+          const match = key.match(/^useSet(\w+)$/);
+          return match ? match[1].toLowerCase() : null;
+        })
+      );
       expect(result.current).not.toContain('bio');
     });
 
     it('does not include read-only extended atom in use hooks', () => {
-      const { result } = renderHook(() => Object.keys(useUserStore().use));
+      const { result } = renderHook(() =>
+        Object.keys(useUserStore()).map((key) => {
+          const match = key.match(/^use(\w+)State$/);
+          return match ? match[1].toLowerCase() : null;
+        })
+      );
       expect(result.current).not.toContain('bio');
     });
 
@@ -614,7 +934,7 @@ describe('createAtomStore', () => {
     });
 
     it('accepts initial values', () => {
-      const { result } = renderHook(() => useCustomStore().useValue.x(), {
+      const { result } = renderHook(() => useCustomStore().useXValue(), {
         wrapper: ({ children }) => (
           <CustomProvider x={2}>{children}</CustomProvider>
         ),
@@ -643,7 +963,7 @@ describe('createAtomStore', () => {
     const derivedAtom = atom((get) => `My name is ${get(userStore.atom.name)}`);
 
     const DerivedAtomConsumer = () => {
-      const message = useUserStore().useValue.atom(derivedAtom);
+      const message = useUserStore().useAtomValue(derivedAtom);
 
       return <div>{message}</div>;
     };
@@ -685,7 +1005,7 @@ describe('createAtomStore', () => {
       todoAtom: PrimitiveAtom<TodoType>;
       remove: () => void;
     }) => {
-      const [todo, setTodo] = useTodoStore().use.atom(todoAtom);
+      const [todo, setTodo] = useTodoStore().useAtomState(todoAtom);
 
       return (
         <div>
@@ -704,7 +1024,7 @@ describe('createAtomStore', () => {
     };
 
     const TodoList = () => {
-      const [todoAtoms, dispatch] = useTodoStore().use.atom(todoAtomsAtom);
+      const [todoAtoms, dispatch] = useTodoStore().useAtomState(todoAtomsAtom);
       return (
         <ul>
           {todoAtoms.map((todoAtom) => (
@@ -772,7 +1092,7 @@ describe('createAtomStore', () => {
       todoAtom: PrimitiveAtom<TodoType>;
       remove: () => void;
     }) => {
-      const [todo, setTodo] = useTodoStore().use.atom(todoAtom);
+      const [todo, setTodo] = useTodoStore().useAtomState(todoAtom);
 
       return (
         <div>
@@ -791,7 +1111,7 @@ describe('createAtomStore', () => {
     };
 
     const TodoList = () => {
-      const [todoAtoms, dispatch] = useTodoStore().use.itemAtoms();
+      const [todoAtoms, dispatch] = useTodoStore().useItemAtomsState();
 
       return (
         <ul>
