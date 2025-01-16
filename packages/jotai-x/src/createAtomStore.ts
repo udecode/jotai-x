@@ -2,11 +2,16 @@ import React from 'react';
 import { getDefaultStore, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useHydrateAtoms } from 'jotai/utils';
 
+
+
 import { atomWithFn } from './atomWithFn';
 import { createAtomProvider, useAtomStore } from './createAtomProvider';
 
+
+
 import type { ProviderProps } from './createAtomProvider';
 import type { Atom, createStore, WritableAtom } from 'jotai/vanilla';
+
 
 export type JotaiStore = ReturnType<typeof createStore>;
 
@@ -344,9 +349,9 @@ export interface CreateAtomStoreOptions<
  *
  * @example
  * const { exampleStore, useExampleStore } = createAtomStore({ count: 1, say: 'hello' }, { name: 'example' as const })
- * const [count, setCount] = useExampleStore().use.count()
- * const say = useExampleStore().get.say()
- * const setSay = useExampleStore().set.say()
+ * const [count, setCount] = useExampleStore().useCountState()
+ * const say = useExampleStore().useSayValue()
+ * const setSay = useExampleStore().useSetSay()
  * setSay('world')
  * const countAtom = exampleStore.atom.count
  */
