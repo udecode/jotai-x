@@ -344,9 +344,9 @@ export interface CreateAtomStoreOptions<
  *
  * @example
  * const { exampleStore, useExampleStore } = createAtomStore({ count: 1, say: 'hello' }, { name: 'example' as const })
- * const [count, setCount] = useExampleStore().use.count()
- * const say = useExampleStore().get.say()
- * const setSay = useExampleStore().set.say()
+ * const [count, setCount] = useExampleStore().useCountState()
+ * const say = useExampleStore().useSayValue()
+ * const setSay = useExampleStore().useSetSay()
  * setSay('world')
  * const countAtom = exampleStore.atom.count
  */
