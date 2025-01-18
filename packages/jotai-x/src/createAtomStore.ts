@@ -3,12 +3,8 @@ import { useCallbackRef } from '@radix-ui/react-use-callback-ref';
 import { getDefaultStore, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { selectAtom, useHydrateAtoms } from 'jotai/utils';
 
-
-
 import { atomWithFn } from './atomWithFn';
 import { createAtomProvider, useAtomStore } from './createAtomProvider';
-
-
 
 import type { ProviderProps } from './createAtomProvider';
 import type { Atom, createStore, WritableAtom } from 'jotai/vanilla';
@@ -272,7 +268,6 @@ export type UseStoreApi<T, E> = (
   SubscribeKeyApis<StoreAtoms<T, E>> & {
     /**
      * When providing `selector`, the atom value will be transformed using the selector function.
-     * If `selector` and `equalityFn` are to be used, don't forget to memoize them.
      *
      * @see https://jotai.org/docs/utilities/select#selectatom
      *
@@ -295,7 +290,6 @@ export type UseStoreApi<T, E> = (
     subscribe: SubscribeParamKeyApi<StoreAtoms<T, E>>;
     /**
      * When providing `selector`, the atom value will be transformed using the selector function.
-     * If `selector` and `equalityFn` are to be used, don't forget to memoize them.
      *
      * @see https://jotai.org/docs/utilities/select#selectatom
      *

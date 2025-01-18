@@ -74,7 +74,6 @@ The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) contai
       const element = useElementStore().useValue('element');
     ```
     - Advanced: `useValue` supports parameters `selector`, which is a function that takes the current value and returns a new value and parameter `equalityFn`, which is a function that compares the previous and new values and only re-renders if they are not equal. Internally, it uses [selectAtom](https://jotai.org/docs/utilities/select#selectatom)
-    - If you want to use selector and equalityFn, **Don't forget to memoize the selector and equalityFn via `useCallback`**.
     ``` js
       const store = useElementStore();
       const toUpperCase = useCallback((element) => element.toUpperCase(), []);
