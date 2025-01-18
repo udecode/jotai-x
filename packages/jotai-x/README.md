@@ -66,12 +66,22 @@ The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) contai
 
 - **`use<Name>Store`**: 
   - A function that returns the following objects: **`useValue`**, **`useSet`**, **`useState`**, where values are hooks for each state defined in the store, and **`get`**, **`set`**, **`subscribe`**, **`store`**, where values are direct get/set accessors to modify each state.
-  - **`useValue`**: Hooks for accessing a state within a component,  ensuring re-rendering when the state changes. See [useAtomValue](https://jotai.org/docs/core/use-atom#useatomvalue).
+  - **`useValue`**: Hooks for accessing a state within a component, ensuring re-rendering when the state changes. See [useAtomValue](https://jotai.org/docs/core/use-atom#useatomvalue).
     ``` js
       const store = useElementStore();
       const element = store.useElementValue();
       // alternative
       const element = useElementStore().useValue('element');
+    ```
+    - Advanced: `useValue` supports parameters `selector`, which is a function that takes the current value and returns a new value and parameter `equalityFn`, which is a function that compares the previous and new values and only re-renders if they are not equal. Internally, it uses [selectAtom](https://jotai.org/docs/utilities/select#selectatom)
+    - If you want to use selector and equalityFn, **Don't forget to memoize the selector and equalityFn via `useCallback`**.
+    ``` js
+      const store = useElementStore();
+      const toUpperCase = useCallback((element) => element.toUpperCase(), []);
+      // Now it will only re-render if the uppercase value changes
+      const element = store.useElementValue(toUpperCase);
+      // alternative
+      const element = useElementStore().useValue('element', toUpperCase);
     ```
   - **`useSet`**: Hooks for setting a state within a component. See [useSetAtom](https://jotai.org/docs/core/use-atom#usesetatom).
     ``` js
