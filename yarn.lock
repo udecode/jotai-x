@@ -1421,6 +1421,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@radix-ui/react-use-callback-ref@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@radix-ui/react-use-callback-ref@npm:1.1.0"
+  peerDependencies:
+    "@types/react": "*"
+    react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: e954863f3baa151faf89ac052a5468b42650efca924417470efd1bd254b411a94c69c30de2fdbb90187b38cb984795978e12e30423dc41e4309d93d53b66d819
+  languageName: node
+  linkType: hard
+
 "@roarr/cli@npm:^5.12.4":
   version: 5.12.4
   resolution: "@roarr/cli@npm:5.12.4"
@@ -6730,6 +6743,8 @@ __metadata:
 "jotai-x@workspace:packages/jotai-x":
   version: 0.0.0-use.local
   resolution: "jotai-x@workspace:packages/jotai-x"
+  dependencies:
+    "@radix-ui/react-use-callback-ref": "npm:1.1.0"
   peerDependencies:
     "@types/react": ">=17.0.0"
     jotai: ">=2.0.0"

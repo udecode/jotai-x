@@ -1,9 +1,14 @@
 import React from 'react';
+import { useCallbackRef } from '@radix-ui/react-use-callback-ref';
 import { getDefaultStore, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { selectAtom, useHydrateAtoms } from 'jotai/utils';
 
+
+
 import { atomWithFn } from './atomWithFn';
 import { createAtomProvider, useAtomStore } from './createAtomProvider';
+
+
 
 import type { ProviderProps } from './createAtomProvider';
 import type { Atom, createStore, WritableAtom } from 'jotai/vanilla';
@@ -484,10 +489,12 @@ export const createAtomStore = <
   ) => {
     const options = convertScopeShorthand(optionsOrScope);
     selector ??= identity;
+    const selectorCallbackRef = useCallbackRef(selector);
+    const equalityFnCallbackRef = useCallbackRef(equalityFn);
     const selectorAtom = selectAtom(
       atomConfig,
-      selector,
-      equalityFn
+      selectorCallbackRef,
+      equalityFnCallbackRef
     ) as Atom<any>;
     return useAtomValue(selectorAtom, {
       store,

@@ -56,5 +56,8 @@
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "@radix-ui/react-use-callback-ref": "1.1.0"
   }
 }
