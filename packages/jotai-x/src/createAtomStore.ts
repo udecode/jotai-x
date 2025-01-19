@@ -1,5 +1,4 @@
 import React from 'react';
-import { useCallbackRef } from '@radix-ui/react-use-callback-ref';
 import { getDefaultStore, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { selectAtom, useHydrateAtoms } from 'jotai/utils';
 
@@ -483,12 +482,10 @@ export const createAtomStore = <
   ) => {
     const options = convertScopeShorthand(optionsOrScope);
     selector ??= identity;
-    const selectorCallbackRef = useCallbackRef(selector);
-    const equalityFnCallbackRef = useCallbackRef(equalityFn);
     const selectorAtom = selectAtom(
       atomConfig,
-      selectorCallbackRef,
-      equalityFnCallbackRef
+      selector,
+      equalityFn
     ) as Atom<any>;
     return useAtomValue(selectorAtom, {
       store,

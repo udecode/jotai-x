@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { act, queryByText, render, renderHook } from '@testing-library/react';
 import { atom, PrimitiveAtom, useAtomValue } from 'jotai';
 import { splitAtom } from 'jotai/utils';
@@ -44,13 +44,13 @@ describe('createAtomStore', () => {
     let arrRendererWithShallowRenderCount = 0;
     const ArrRendererWithShallow = () => {
       arrRendererWithShallowRenderCount += 1;
-      const equalityFn = (a: string[], b: string[]) => {
+      const equalityFn = useCallback((a: string[], b: string[]) => {
         if (a.length !== b.length) return false;
         for (let i = 0; i < a.length; i += 1) {
           if (a[i] !== b[i]) return false;
         }
         return true;
-      };
+      }, []);
       const arr = useMyTestStoreStore().useArrValue(undefined, equalityFn);
       return <div>{`[${arr.join(', ')}]`}</div>;
     };
@@ -58,14 +58,16 @@ describe('createAtomStore', () => {
     let arr0RenderCount = 0;
     const Arr0Renderer = () => {
       arr0RenderCount += 1;
-      const arr0 = useMyTestStoreStore().useArrValue((v) => v[0]);
+      const select0 = useCallback((v: string[]) => v[0], []);
+      const arr0 = useMyTestStoreStore().useArrValue(select0);
       return <div>{arr0}</div>;
     };
 
     let arr1RenderCount = 0;
     const Arr1Renderer = () => {
       arr1RenderCount += 1;
-      const arr1 = useMyTestStoreStore().useArrValue((v) => v[1]);
+      const select1 = useCallback((v: string[]) => v[1], []);
+      const arr1 = useMyTestStoreStore().useArrValue(select1);
       return <div>{arr1}</div>;
     };
 
