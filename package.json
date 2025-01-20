@@ -102,7 +102,7 @@
     "turbo": "^1.11.0",
     "turbowatch": "2.29.4",
     "typedoc": "^0.25.4",
-    "typescript": "5.3.3"
+    "typescript": "5.7.3"
   },
   "packageManager": "yarn@4.0.2",
   "engines": {

@@ -59,6 +59,7 @@ The **`options`** object can include several properties to customize the behavio
 - **`delay`**: If you need to introduce a delay in state updates, you can specify it here. Optional.
 - **`effect`**: A React component that can be used to run effects inside the provider. Optional.
 - **`extend`**: Extend the store with derived atoms based on the store state. Optional.
+- **`infiniteRenderDetectionLimit`**: In non production mode, it will throw an error if the number of `useValue` hook calls exceeds this limit during the same render. Optional.
 
 #### Return Value
 
@@ -66,12 +67,27 @@ The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) contai
 
 - **`use<Name>Store`**: 
   - A function that returns the following objects: **`useValue`**, **`useSet`**, **`useState`**, where values are hooks for each state defined in the store, and **`get`**, **`set`**, **`subscribe`**, **`store`**, where values are direct get/set accessors to modify each state.
-  - **`useValue`**: Hooks for accessing a state within a component,  ensuring re-rendering when the state changes. See [useAtomValue](https://jotai.org/docs/core/use-atom#useatomvalue).
+  - **`useValue`**: Hooks for accessing a state within a component, ensuring re-rendering when the state changes. See [useAtomValue](https://jotai.org/docs/core/use-atom#useatomvalue).
     ``` js
       const store = useElementStore();
       const element = store.useElementValue();
       // alternative
       const element = useElementStore().useValue('element');
+    ```
+    - Advanced: `useValue` supports parameters `selector`, which is a function that takes the current value and returns a new value and parameter `equalityFn`, which is a function that compares the previous and new values and only re-renders if they are not equal. Internally, it uses [selectAtom](https://jotai.org/docs/utilities/select#selectatom). You must memoize `selector`/`equalityFn` adequately.
+    ``` js
+      const store = useElementStore();
+
+      // Memoize the selector yourself
+      const toUpperCase = useCallback((element) => element.toUpperCase(), []);
+      // Now it will only re-render if the uppercase value changes
+      const element = store.useElementValue(toUpperCase);
+      // alternative
+      const element = useElementStore().useValue('element', toUpperCase);
+
+      // Pass an dependency array to prevent re-renders
+      const [n, setN] = useState(0); // n may change during re-renders
+      const numNthCharacter = useCallback((element) => element[n], [n]);
     ```
   - **`useSet`**: Hooks for setting a state within a component. See [useSetAtom](https://jotai.org/docs/core/use-atom#usesetatom).
     ``` js
@@ -287,7 +303,32 @@ const Component = () => {
 };
 ```
 
-## Migrate from v1 to v2
+## **Troubleshooting**
+### Error: use<Key>Value/useValue has rendered `num` times in the same render
+When calling `use<Key>Value` or `useValue` with `selector` and `equalityFn`, those two functions must be memoized. Otherwise, the component will re-render infinitely. In order to prevent developers from making this mistake, in non-production mode (`process.env.NODE_ENV !== 'production'`), we will throw an error if the number of `useValue` hook calls exceeds a certain limit.
+
+Usually, this error is caused by not memoizing the `selector` or `equalityFn` functions. To fix this, you can use `useCallback` to memoize the functions, or pass a dependency array yourselves. We support multiple alternatives:
+
+```tsx
+// No selector at all
+useValue('key')
+
+// Memoize with useCallback yourself
+const memoizedSelector = useCallback(selector, [...]);
+const memoizedEqualityFn = useCallback(equalityFn, [...]);
+// memoizedEqualityFn is an optional parameter
+useValue('key', memoizedSelector, memoizedEqualityFn);
+
+// Provide selector and its deps
+useValue('key', selector, [...]);
+
+// Provide selector and equalityFn and all of their deps
+useValue('key', selector, equalityFn, [...]);
+```
+
+The error could also be a false positive, since the internal counter is shared across all `useValue` calls of the same store. If your component tree is very deep and uses the same store's `useValue` multiple times, then the limit could be reached. To deal with that, `createAtomStore` supports an optional parameter `infiniteRenderDetectionLimit`. You can configure that with a higher limit.
+
+## **Migrate from v1 to v2**
 
 1. Return of `use<Name>Store`: `get` is renamed to `use<Key>Value`, `set` is renamed to `useSet<Key>`, `use` is renamed to `useState`.
 ``` diff

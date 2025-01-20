@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { act, queryByText, render, renderHook } from '@testing-library/react';
 import { atom, PrimitiveAtom, useAtomValue } from 'jotai';
 import { splitAtom } from 'jotai/utils';
@@ -8,6 +8,217 @@ import { splitAtom } from 'jotai/utils';
 import { createAtomStore } from './createAtomStore';
 
 describe('createAtomStore', () => {
+  describe('no unnecessary rerender', () => {
+    type MyTestStoreValue = {
+      num: number;
+      arr: string[];
+    };
+
+    const INITIAL_NUM = 0;
+    const INITIAL_ARR = ['alice', 'bob'];
+
+    const initialTestStoreValue: MyTestStoreValue = {
+      num: INITIAL_NUM,
+      arr: INITIAL_ARR,
+    };
+
+    const { useMyTestStoreStore, MyTestStoreProvider } = createAtomStore(
+      initialTestStoreValue,
+      { name: 'myTestStore' as const }
+    );
+
+    let numRenderCount = 0;
+    const NumRenderer = () => {
+      numRenderCount += 1;
+      const num = useMyTestStoreStore().useNumValue();
+      return <div>{num}</div>;
+    };
+
+    let arrRenderCount = 0;
+    const ArrRenderer = () => {
+      arrRenderCount += 1;
+      const arr = useMyTestStoreStore().useArrValue();
+      return <div>{`[${arr.join(', ')}]`}</div>;
+    };
+
+    let arrRendererWithShallowRenderCount = 0;
+    const ArrRendererWithShallow = () => {
+      arrRendererWithShallowRenderCount += 1;
+      const equalityFn = useCallback((a: string[], b: string[]) => {
+        if (a.length !== b.length) return false;
+        for (let i = 0; i < a.length; i += 1) {
+          if (a[i] !== b[i]) return false;
+        }
+        return true;
+      }, []);
+      const arr = useMyTestStoreStore().useArrValue(undefined, equalityFn);
+      return <div>{`[${arr.join(', ')}]`}</div>;
+    };
+
+    let arr0RenderCount = 0;
+    const Arr0Renderer = () => {
+      arr0RenderCount += 1;
+      const select0 = useCallback((v: string[]) => v[0], []);
+      const arr0 = useMyTestStoreStore().useArrValue(select0);
+      return <div>{arr0}</div>;
+    };
+
+    let arr1RenderCount = 0;
+    const Arr1Renderer = () => {
+      arr1RenderCount += 1;
+      const select1 = useCallback((v: string[]) => v[1], []);
+      const arr1 = useMyTestStoreStore().useArrValue(select1);
+      return <div>{arr1}</div>;
+    };
+
+    let arrNumRenderCount = 0;
+    const ArrNumRenderer = () => {
+      arrNumRenderCount += 1;
+      const store = useMyTestStoreStore();
+      const num = store.useNumValue();
+      const selectArrNum = useCallback((v: string[]) => v[num], [num]);
+      const arrNum = store.useArrValue(selectArrNum);
+      return (
+        <div>
+          <div>arrNum: {arrNum}</div>
+        </div>
+      );
+    };
+
+    let arrNumRenderWithDepsCount = 0;
+    const ArrNumRendererWithDeps = () => {
+      arrNumRenderWithDepsCount += 1;
+      const store = useMyTestStoreStore();
+      const num = store.useNumValue();
+      const arrNum = store.useArrValue((v) => v[num], [num]);
+      return (
+        <div>
+          <div>arrNumWithDeps: {arrNum}</div>
+        </div>
+      );
+    };
+
+    const BadSelectorRenderer = () => {
+      const arr0 = useMyTestStoreStore().useArrValue((v) => v[0]);
+      return <div>{arr0}</div>;
+    };
+
+    const Buttons = () => {
+      const store = useMyTestStoreStore();
+      return (
+        <div>
+          <button
+            type="button"
+            onClick={() => store.setNum(store.getNum() + 1)}
+          >
+            increment
+          </button>
+          <button
+            type="button"
+            onClick={() => store.setArr([...store.getArr(), 'charlie'])}
+          >
+            add one name
+          </button>
+          <button
+            type="button"
+            onClick={() => store.setArr([...store.getArr()])}
+          >
+            copy array
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              store.setArr(['ava', ...store.getArr().slice(1)]);
+              store.setNum(0);
+            }}
+          >
+            modify arr0
+          </button>
+        </div>
+      );
+    };
+
+    it('does not rerender when unrelated state changes', () => {
+      const { getByText } = render(
+        <MyTestStoreProvider>
+          <NumRenderer />
+          <ArrRenderer />
+          <ArrRendererWithShallow />
+          <Arr0Renderer />
+          <Arr1Renderer />
+          <ArrNumRenderer />
+          <ArrNumRendererWithDeps />
+          <Buttons />
+        </MyTestStoreProvider>
+      );
+
+      // Why it's 2, not 1? Is React StrictMode causing this?
+      expect(numRenderCount).toBe(2);
+      expect(arrRenderCount).toBe(2);
+      expect(arrRendererWithShallowRenderCount).toBe(2);
+      expect(arr0RenderCount).toBe(2);
+      expect(arr1RenderCount).toBe(2);
+      expect(arrNumRenderCount).toBe(2);
+      expect(arrNumRenderWithDepsCount).toBe(2);
+      expect(getByText('arrNum: alice')).toBeInTheDocument();
+      expect(getByText('arrNumWithDeps: alice')).toBeInTheDocument();
+
+      act(() => getByText('increment').click());
+      expect(numRenderCount).toBe(3);
+      expect(arrRenderCount).toBe(2);
+      expect(arrRendererWithShallowRenderCount).toBe(2);
+      expect(arr0RenderCount).toBe(2);
+      expect(arr1RenderCount).toBe(2);
+      expect(arrNumRenderCount).toBe(5);
+      expect(arrNumRenderWithDepsCount).toBe(5);
+      expect(getByText('arrNum: bob')).toBeInTheDocument();
+      expect(getByText('arrNumWithDeps: bob')).toBeInTheDocument();
+
+      act(() => getByText('add one name').click());
+      expect(numRenderCount).toBe(3);
+      expect(arrRenderCount).toBe(3);
+      expect(arrRendererWithShallowRenderCount).toBe(3);
+      expect(arr0RenderCount).toBe(2);
+      expect(arr1RenderCount).toBe(2);
+      expect(arrNumRenderCount).toBe(5);
+      expect(arrNumRenderWithDepsCount).toBe(5);
+      expect(getByText('arrNum: bob')).toBeInTheDocument();
+      expect(getByText('arrNumWithDeps: bob')).toBeInTheDocument();
+
+      act(() => getByText('copy array').click());
+      expect(numRenderCount).toBe(3);
+      expect(arrRenderCount).toBe(4);
+      expect(arrRendererWithShallowRenderCount).toBe(3);
+      expect(arr0RenderCount).toBe(2);
+      expect(arr1RenderCount).toBe(2);
+      expect(arrNumRenderCount).toBe(5);
+      expect(arrNumRenderWithDepsCount).toBe(5);
+      expect(getByText('arrNum: bob')).toBeInTheDocument();
+      expect(getByText('arrNumWithDeps: bob')).toBeInTheDocument();
+
+      act(() => getByText('modify arr0').click());
+      expect(numRenderCount).toBe(4);
+      expect(arrRenderCount).toBe(5);
+      expect(arrRendererWithShallowRenderCount).toBe(4);
+      expect(arr0RenderCount).toBe(3);
+      expect(arr1RenderCount).toBe(2);
+      expect(arrNumRenderCount).toBe(8);
+      expect(arrNumRenderWithDepsCount).toBe(8);
+      expect(getByText('arrNum: ava')).toBeInTheDocument();
+      expect(getByText('arrNumWithDeps: ava')).toBeInTheDocument();
+    });
+
+    it('Throw error if user does not memoize selector', () => {
+      expect(() =>
+        render(
+          <MyTestStoreProvider>
+            <BadSelectorRenderer />
+          </MyTestStoreProvider>
+        )
+      ).toThrow();
+    });
+  });
+
   describe('single provider', () => {
     type MyTestStoreValue = {
       name: string;
