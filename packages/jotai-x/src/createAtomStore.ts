@@ -114,16 +114,16 @@ type GetAtomFn = <V>(
   options?: UseAtomOptionsOrScope
 ) => V;
 
-type UseAtomValueFn = <V, SO = V>(
+type UseAtomValueFn = <V, S = V>(
   atom: Atom<V>,
   store?: JotaiStore,
   options?: UseAtomOptionsOrScope,
-  selector?: (v: V, prevSelectorOutput?: SO) => SO,
+  selector?: (v: V, prevSelectorOutput?: S) => S,
   equalityFnOrDeps?:
-    | ((prevSelectorOutput: SO, selectorOutput: SO) => boolean)
+    | ((prevSelectorOutput: S, selectorOutput: S) => boolean)
     | unknown[],
   deps?: unknown[]
-) => SO;
+) => S;
 
 type SetAtomFn = <V, A extends unknown[], R>(
   atom: WritableAtom<V, A, R>,
