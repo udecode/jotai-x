@@ -119,7 +119,10 @@ type UseAtomValueFn = <V, SO = V>(
   store?: JotaiStore,
   options?: UseAtomOptionsOrScope,
   selector?: (v: V, prevSelectorOutput?: SO) => SO,
-  equalityFn?: (prevSelectorOutput: SO, selectorOutput: SO) => boolean
+  equalityFnOrDeps?:
+    | ((prevSelectorOutput: SO, selectorOutput: SO) => boolean)
+    | unknown[],
+  deps?: unknown[]
 ) => SO;
 
 type SetAtomFn = <V, A extends unknown[], R>(
@@ -144,12 +147,22 @@ type SubscribeAtomFn = <V>(
 
 // store.use<Key>Value()
 export type UseKeyValueApis<O> = {
-  [K in keyof O as UseKeyValue<K & string>]: O[K] extends Atom<infer V>
-    ? <SO = V>(
-        selector?: (v: V, prevSelectorOutput?: SO) => SO,
-        equalityFn?: (prevSelectorOutput: SO, selectorOutput: SO) => boolean
-      ) => SO
-    : never;
+  [K in keyof O as UseKeyValue<K & string>]: {
+    (): O[K] extends Atom<infer V> ? V : never;
+    <S>(
+      selector: (v: O[K] extends Atom<infer V> ? V : never) => S,
+      deps?: unknown[]
+    ): S;
+    <S>(
+      selector:
+        | (O[K] extends Atom<infer V>
+            ? (v: V, prevSelectorOutput?: S) => S
+            : never)
+        | undefined,
+      equalityFn: (prevSelectorOutput: S, selectorOutput: S) => boolean,
+      deps?: unknown[]
+    ): S;
+  };
 };
 
 // store.get<Key>()
@@ -200,13 +213,25 @@ export type SubscribeKeyApis<O> = {
 };
 
 // store.useValue('key')
-export type UseParamKeyValueApi<O> = <K extends keyof O, SO>(
-  key: K,
-  selector?: O[K] extends Atom<infer V>
-    ? (v: V, prevSelectorOutput?: SO) => SO
-    : never,
-  equalityFn?: (prevSelectorOutput: SO, selectorOutput: SO) => boolean
-) => O[K] extends Atom<infer V> ? V : never;
+export type UseParamKeyValueApi<O> = {
+  // abc
+  <K extends keyof O>(key: K): O[K] extends Atom<infer V> ? V : never;
+  <K extends keyof O, S>(
+    key: K,
+    selector: (v: O[K] extends Atom<infer V> ? V : never) => S,
+    deps?: unknown[]
+  ): S;
+  <K extends keyof O, S>(
+    key: K,
+    selector:
+      | (O[K] extends Atom<infer V>
+          ? (v: V, prevSelectorOutput?: S) => S
+          : never)
+      | undefined,
+    equalityFn: (prevSelectorOutput: S, selectorOutput: S) => boolean,
+    deps?: unknown[]
+  ): S;
+};
 
 // store.get('key')
 export type GetParamKeyApi<O> = <K extends keyof O>(
@@ -238,11 +263,20 @@ export type SubscribeParamKeyApi<O> = <K extends keyof O, V>(
   callback: (newValue: V) => void
 ) => O[K] extends Atom<V> ? () => void : never;
 
-export type UseAtomParamValueApi = <V, SO = V>(
-  atom: Atom<V>,
-  selector?: (v: V, prevSelectorOutput?: SO) => SO,
-  equalityFn?: (prevSelectorOutput: SO, selectorOutput: SO) => boolean
-) => SO;
+export type UseAtomParamValueApi = {
+  <V>(atom: Atom<V>): V;
+  <V, S = V>(
+    atom: Atom<V>,
+    selector: (v: V, prevSelectorOutput?: S) => S,
+    deps?: unknown[]
+  ): S;
+  <V, S = V>(
+    atom: Atom<V>,
+    selector: ((v: V, prevSelectorOutput?: S) => S) | undefined,
+    equalityFn: (prevSelectorOutput: S, selectorOutput: S) => boolean,
+    deps?: unknown[]
+  ): S;
+};
 export type GetAtomParamApi = <V>(atom: Atom<V>) => V;
 export type UseSetAtomParamApi = <V, A extends unknown[], R>(
   atom: WritableAtom<V, A, R>
@@ -267,19 +301,24 @@ export type UseStoreApi<T, E> = (
   SubscribeKeyApis<StoreAtoms<T, E>> & {
     /**
      * When providing `selector`, the atom value will be transformed using the selector function.
+     * The selector and equalityFn MUST be memoized.
      *
      * @see https://jotai.org/docs/utilities/select#selectatom
      *
      * @example
      *   const store = useStore()
      *   // only rerenders when the first element of the array changes
-     *   const arrayFirst = store.useValue('array', array => array[0])
+     *   const arrayFirst = store.useValue('array', array => array[0], [])
      *   // only rerenders when the first element of the array changes, but returns the whole array
-     *   const array = store.useValue('array', undefined, (prev, next) => prev[0] === next[0])
+     *   const array = store.useValue('array', undefined, (prev, next) => prev[0] === next[0], [])
+     *   // without dependency array, then you need to memoize the selector and equalityFn yourself
+     *   const cb = useCallback((array) => array[n], [n])
+     *   const arrayNth = store.useValue('array', cb)
      *
      * @param key The key of the atom
      * @param selector A function that takes the atom value and returns the value to be used. Defaults to identity function that returns the atom value.
-     * @param equalityFn A function that compares the previous selector output and the new selector output. Defaults to comparing outputs of the selector function.
+     * @param equalityFnOrDeps Dependency array or a function that compares the previous selector output and the new selector output. Defaults to comparing outputs of the selector function.
+     * @param deps Dependency array for the selector and equalityFn
      */
     useValue: UseParamKeyValueApi<StoreAtoms<T, E>>;
     get: GetParamKeyApi<StoreAtoms<T, E>>;
@@ -289,6 +328,7 @@ export type UseStoreApi<T, E> = (
     subscribe: SubscribeParamKeyApi<StoreAtoms<T, E>>;
     /**
      * When providing `selector`, the atom value will be transformed using the selector function.
+     * The selector and equalityFn MUST be memoized.
      *
      * @see https://jotai.org/docs/utilities/select#selectatom
      *
@@ -298,10 +338,14 @@ export type UseStoreApi<T, E> = (
      *   const arrayFirst = store.useAtomValue(arrayAtom, array => array[0])
      *   // only rerenders when the first element of the array changes, but returns the whole array
      *   const array = store.useAtomValue(arrayAtom, undefined, (prev, next) => prev[0] === next[0])
+     *   // without dependency array, then you need to memoize the selector and equalityFn yourself
+     *  const cb = useCallback((array) => array[n], [n])
+     * const arrayNth = store.useAtomValue(arrayAtom, cb)
      *
      * @param atom The atom to use
      * @param selector A function that takes the atom value and returns the value to be used. Defaults to identity function that returns the atom value.
-     * @param equalityFn A function that compares the previous selector output and the new selector output. Defaults to comparing outputs of the selector function.
+     * @param equalityFn Dependency array or a function that compares the previous selector output and the new selector output. Defaults to comparing outputs of the selector function.
+     * @param deps Dependency array for the selector and equalityFn
      */
     useAtomValue: UseAtomParamValueApi;
     getAtom: GetAtomParamApi;
@@ -391,6 +435,7 @@ export interface CreateAtomStoreOptions<
   delay?: UseAtomOptions['delay'];
   effect?: React.FC;
   extend?: (atomsWithoutExtend: StoreAtomsWithoutExtend<T>) => E;
+  infiniteRenderDetectionLimit?: number;
 }
 
 /**
@@ -411,7 +456,13 @@ export const createAtomStore = <
   N extends string = '',
 >(
   initialState: T,
-  { name, delay: delayRoot, effect, extend }: CreateAtomStoreOptions<T, E, N>
+  {
+    name,
+    delay: delayRoot,
+    effect,
+    extend,
+    infiniteRenderDetectionLimit = 500,
+  }: CreateAtomStoreOptions<T, E, N>
 ): AtomStoreApi<T, E, N> => {
   type MyStoreAtoms = StoreAtoms<T, E>;
   type MyWritableStoreAtoms = WritableStoreAtoms<T, E>;
@@ -473,19 +524,52 @@ export const createAtomStore = <
     return store ?? contextStore;
   };
 
+  let renderCount = 0;
+
   const useAtomValueWithStore: UseAtomValueFn = (
     atomConfig,
     store,
     optionsOrScope,
     selector,
-    equalityFn
+    equalityFnOrDeps,
+    deps
   ) => {
+    // If selector/equalityFn are not memoized, infinite loop will occur.
+    if (process.env.NODE_ENV !== 'production') {
+      renderCount += 1;
+      if (renderCount > infiniteRenderDetectionLimit) {
+        throw new Error(
+          `
+use<Key>Value/useValue has rendered ${infiniteRenderDetectionLimit} times in the same render.
+It is very likely to have fallen into an infinite loop.
+That is because you do not memoize the selector/equalityFn function param.
+Please wrap them with useCallback or configure the deps array correctly.`
+        );
+      }
+      // We need to use setTimeout instead of useEffect here, because when infinite loop happens,
+      // the effect (fired in the next micro task) will execute before the rerender.
+      setTimeout(() => {
+        renderCount = 0;
+      });
+    }
+
     const options = convertScopeShorthand(optionsOrScope);
     selector ??= identity;
+    const equalityFn =
+      typeof equalityFnOrDeps === 'function' ? equalityFnOrDeps : undefined;
+    deps = (typeof equalityFnOrDeps === 'function'
+      ? deps
+      : equalityFnOrDeps) ?? [selector, equalityFn];
+
+    const [memoizedSelector, memoizedEqualityFn] = React.useMemo(
+      () => [selector, equalityFn],
+      deps
+    );
+
     const selectorAtom = selectAtom(
       atomConfig,
-      selector,
-      equalityFn
+      memoizedSelector,
+      memoizedEqualityFn
     ) as Atom<any>;
     return useAtomValue(selectorAtom, {
       store,
@@ -548,14 +632,18 @@ export const createAtomStore = <
       store: JotaiStore | undefined,
       optionsOrScope: UseAtomOptionsOrScope = {},
       selector?: (v: any, prevSelectorOutput?: any) => any,
-      equalityFn?: (prevSelectorOutput: any, selectorOutput: any) => boolean
+      equalityFnOrDeps?:
+        | ((prevSelectorOutput: any, selectorOutput: any) => boolean)
+        | unknown[],
+      deps?: unknown[]
     ) =>
       useAtomValueWithStore(
         atomConfig,
         store,
         optionsOrScope,
         selector,
-        equalityFn
+        equalityFnOrDeps,
+        deps
       );
 
     (getAtoms as any)[key] = (
@@ -699,14 +787,15 @@ export const createAtomStore = <
         scopedOptions
       ) as SubscribeParamKeyApi<MyStoreAtoms>,
       // store.useAtomValue(atomConfig)
-      useAtomValue: (atomConfig, selector, equalityFn) =>
+      useAtomValue: ((atomConfig, selector, equalityFnOrDeps, deps) =>
         useAtomValueWithStore(
           atomConfig,
           store,
           scopedOptions,
           selector,
-          equalityFn
-        ),
+          equalityFnOrDeps,
+          deps
+        )) as UseAtomParamValueApi,
       // store.getAtom(atomConfig)
       getAtom: (atomConfig) =>
         getAtomWithStore(atomConfig, store, scopedOptions),

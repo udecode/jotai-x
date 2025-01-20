@@ -14,7 +14,7 @@ describe('createAtomStore', () => {
       arr: string[];
     };
 
-    const INITIAL_NUM = 42;
+    const INITIAL_NUM = 0;
     const INITIAL_ARR = ['alice', 'bob'];
 
     const initialTestStoreValue: MyTestStoreValue = {
@@ -71,6 +71,38 @@ describe('createAtomStore', () => {
       return <div>{arr1}</div>;
     };
 
+    let arrNumRenderCount = 0;
+    const ArrNumRenderer = () => {
+      arrNumRenderCount += 1;
+      const store = useMyTestStoreStore();
+      const num = store.useNumValue();
+      const selectArrNum = useCallback((v: string[]) => v[num], [num]);
+      const arrNum = store.useArrValue(selectArrNum);
+      return (
+        <div>
+          <div>arrNum: {arrNum}</div>
+        </div>
+      );
+    };
+
+    let arrNumRenderWithDepsCount = 0;
+    const ArrNumRendererWithDeps = () => {
+      arrNumRenderWithDepsCount += 1;
+      const store = useMyTestStoreStore();
+      const num = store.useNumValue();
+      const arrNum = store.useArrValue((v) => v[num], [num]);
+      return (
+        <div>
+          <div>arrNumWithDeps: {arrNum}</div>
+        </div>
+      );
+    };
+
+    const BadSelectorRenderer = () => {
+      const arr0 = useMyTestStoreStore().useArrValue((v) => v[0]);
+      return <div>{arr0}</div>;
+    };
+
     const Buttons = () => {
       const store = useMyTestStoreStore();
       return (
@@ -95,7 +127,10 @@ describe('createAtomStore', () => {
           </button>
           <button
             type="button"
-            onClick={() => store.setArr(['ava', ...store.getArr().slice(1)])}
+            onClick={() => {
+              store.setArr(['ava', ...store.getArr().slice(1)]);
+              store.setNum(0);
+            }}
           >
             modify arr0
           </button>
@@ -111,6 +146,8 @@ describe('createAtomStore', () => {
           <ArrRendererWithShallow />
           <Arr0Renderer />
           <Arr1Renderer />
+          <ArrNumRenderer />
+          <ArrNumRendererWithDeps />
           <Buttons />
         </MyTestStoreProvider>
       );
@@ -121,6 +158,10 @@ describe('createAtomStore', () => {
       expect(arrRendererWithShallowRenderCount).toBe(2);
       expect(arr0RenderCount).toBe(2);
       expect(arr1RenderCount).toBe(2);
+      expect(arrNumRenderCount).toBe(2);
+      expect(arrNumRenderWithDepsCount).toBe(2);
+      expect(getByText('arrNum: alice')).toBeInTheDocument();
+      expect(getByText('arrNumWithDeps: alice')).toBeInTheDocument();
 
       act(() => getByText('increment').click());
       expect(numRenderCount).toBe(3);
@@ -128,6 +169,10 @@ describe('createAtomStore', () => {
       expect(arrRendererWithShallowRenderCount).toBe(2);
       expect(arr0RenderCount).toBe(2);
       expect(arr1RenderCount).toBe(2);
+      expect(arrNumRenderCount).toBe(5);
+      expect(arrNumRenderWithDepsCount).toBe(5);
+      expect(getByText('arrNum: bob')).toBeInTheDocument();
+      expect(getByText('arrNumWithDeps: bob')).toBeInTheDocument();
 
       act(() => getByText('add one name').click());
       expect(numRenderCount).toBe(3);
@@ -135,6 +180,10 @@ describe('createAtomStore', () => {
       expect(arrRendererWithShallowRenderCount).toBe(3);
       expect(arr0RenderCount).toBe(2);
       expect(arr1RenderCount).toBe(2);
+      expect(arrNumRenderCount).toBe(5);
+      expect(arrNumRenderWithDepsCount).toBe(5);
+      expect(getByText('arrNum: bob')).toBeInTheDocument();
+      expect(getByText('arrNumWithDeps: bob')).toBeInTheDocument();
 
       act(() => getByText('copy array').click());
       expect(numRenderCount).toBe(3);
@@ -142,13 +191,31 @@ describe('createAtomStore', () => {
       expect(arrRendererWithShallowRenderCount).toBe(3);
       expect(arr0RenderCount).toBe(2);
       expect(arr1RenderCount).toBe(2);
+      expect(arrNumRenderCount).toBe(5);
+      expect(arrNumRenderWithDepsCount).toBe(5);
+      expect(getByText('arrNum: bob')).toBeInTheDocument();
+      expect(getByText('arrNumWithDeps: bob')).toBeInTheDocument();
 
       act(() => getByText('modify arr0').click());
-      expect(numRenderCount).toBe(3);
+      expect(numRenderCount).toBe(4);
       expect(arrRenderCount).toBe(5);
       expect(arrRendererWithShallowRenderCount).toBe(4);
       expect(arr0RenderCount).toBe(3);
       expect(arr1RenderCount).toBe(2);
+      expect(arrNumRenderCount).toBe(8);
+      expect(arrNumRenderWithDepsCount).toBe(8);
+      expect(getByText('arrNum: ava')).toBeInTheDocument();
+      expect(getByText('arrNumWithDeps: ava')).toBeInTheDocument();
+    });
+
+    it('Throw error if user does not memoize selector', () => {
+      expect(() =>
+        render(
+          <MyTestStoreProvider>
+            <BadSelectorRenderer />
+          </MyTestStoreProvider>
+        )
+      ).toThrow();
     });
   });
 
