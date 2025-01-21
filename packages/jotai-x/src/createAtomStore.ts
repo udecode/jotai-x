@@ -467,7 +467,7 @@ export const createAtomStore = <
     delay: delayRoot,
     effect,
     extend,
-    infiniteRenderDetectionLimit = 500,
+    infiniteRenderDetectionLimit = 100_000,
   }: CreateAtomStoreOptions<T, E, N>
 ): AtomStoreApi<T, E, N> => {
   type MyStoreAtoms = StoreAtoms<T, E>;
