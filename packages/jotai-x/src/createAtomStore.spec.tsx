@@ -1,3 +1,4 @@
+/* eslint-disable react-compiler/react-compiler */
 import '@testing-library/jest-dom';
 
 import React, { useCallback } from 'react';
@@ -5,7 +6,13 @@ import { act, queryByText, render, renderHook } from '@testing-library/react';
 import { atom, PrimitiveAtom, useAtomValue } from 'jotai';
 import { splitAtom } from 'jotai/utils';
 
-import { createAtomStore } from './createAtomStore';
+import {
+  createAtomStore,
+  useStoreAtomValue,
+  useStoreSet,
+  useStoreState,
+  useStoreValue,
+} from './createAtomStore';
 
 describe('createAtomStore', () => {
   describe('no unnecessary rerender', () => {
@@ -403,6 +410,30 @@ describe('createAtomStore', () => {
       );
     };
 
+    const BecomeFriendUseValueNoReactCompilerComplain = () => {
+      // Just guarantee that the react compiler doesn't complain
+      /* eslint-enable react-compiler/react-compiler */
+      const store = useMyTestStoreStore();
+      const becomeFriends1 = useStoreValue(store, 'becomeFriends');
+      const becomeFriends2 = useStoreAtomValue(
+        store,
+        myTestStoreStore.atom.becomeFriends
+      );
+
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            becomeFriends1();
+            becomeFriends2();
+          }}
+        >
+          Become Friends
+        </button>
+      );
+      /* eslint-disable react-compiler/react-compiler */
+    };
+
     const BecomeFriendsGet = () => {
       // Make sure both of these are actual functions, not wrapped functions
       const store = useMyTestStoreStore();
@@ -470,6 +501,28 @@ describe('createAtomStore', () => {
           <div>useSetBecameFriends: {becameFriends.toString()}</div>
         </>
       );
+    };
+
+    const BecomeFriendsUseSetNoReactCompilerComplain = () => {
+      // Just guarantee that the react compiler doesn't complain
+      /* eslint-enable react-compiler/react-compiler */
+      const store = useMyTestStoreStore();
+      const setBecomeFriends = useStoreSet(store, 'becomeFriends');
+      const [becameFriends, setBecameFriends] = React.useState(false);
+
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => setBecomeFriends(() => setBecameFriends(true))}
+          >
+            Change Callback
+          </button>
+
+          <div>useSetBecameFriends: {becameFriends.toString()}</div>
+        </>
+      );
+      /* eslint-disable react-compiler/react-compiler */
     };
 
     const BecomeFriendsSet = () => {
@@ -546,9 +599,31 @@ describe('createAtomStore', () => {
       );
     };
 
+    const BecomeFriendsUseStateNoReactCompilerComplain = () => {
+      // Just guarantee that the react compiler doesn't complain
+      /* eslint-enable react-compiler/react-compiler */
+      const store = useMyTestStoreStore();
+      const [, setBecomeFriends] = useStoreState(store, 'becomeFriends');
+      const [becameFriends, setBecameFriends] = React.useState(false);
+
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => setBecomeFriends(() => setBecameFriends(true))}
+          >
+            Change Callback
+          </button>
+
+          <div>useBecameFriends: {becameFriends.toString()}</div>
+        </>
+      );
+      /* eslint-disable react-compiler/react-compiler */
+    };
+
     beforeEach(() => {
-      renderHook(() => useMyTestStoreStore().useSetName()(INITIAL_NAME));
-      renderHook(() => useMyTestStoreStore().useSetAge()(INITIAL_AGE));
+      renderHook(() => useMyTestStoreStore().setName(INITIAL_NAME));
+      renderHook(() => useMyTestStoreStore().setAge(INITIAL_AGE));
     });
 
     it('passes default values from provider to consumer', () => {
@@ -797,6 +872,18 @@ describe('createAtomStore', () => {
       expect(getByText('becameFriends: true')).toBeInTheDocument();
     });
 
+    it('provides and useValue of functions with no react compiler complain', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendUseValueNoReactCompilerComplain />
+        </BecomeFriendsProvider>
+      );
+
+      expect(getByText('becameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('becameFriends: true')).toBeInTheDocument();
+    });
+
     it('provides and get functions', () => {
       const { getByText } = render(
         <BecomeFriendsProvider>
@@ -839,6 +926,20 @@ describe('createAtomStore', () => {
       const { getByText } = render(
         <BecomeFriendsProvider>
           <BecomeFriendsUseSetWithKeyParam />
+          <BecomeFriendsUseValueWithKeyParam />
+        </BecomeFriendsProvider>
+      );
+
+      act(() => getByText('Change Callback').click());
+      expect(getByText('useSetBecameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('useSetBecameFriends: true')).toBeInTheDocument();
+    });
+
+    it('useSet of functions with no react compiler complain', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsUseSetNoReactCompilerComplain />
           <BecomeFriendsUseValueWithKeyParam />
         </BecomeFriendsProvider>
       );
@@ -895,6 +996,20 @@ describe('createAtomStore', () => {
       const { getByText } = render(
         <BecomeFriendsProvider>
           <BecomeFriendsUseStateWithKeyParam />
+          <BecomeFriendsUseValueWithKeyParam />
+        </BecomeFriendsProvider>
+      );
+
+      act(() => getByText('Change Callback').click());
+      expect(getByText('useBecameFriends: false')).toBeInTheDocument();
+      act(() => getByText('Become Friends').click());
+      expect(getByText('useBecameFriends: true')).toBeInTheDocument();
+    });
+
+    it('use state functions with no react compiler complain', () => {
+      const { getByText } = render(
+        <BecomeFriendsProvider>
+          <BecomeFriendsUseStateNoReactCompilerComplain />
           <BecomeFriendsUseValueWithKeyParam />
         </BecomeFriendsProvider>
       );

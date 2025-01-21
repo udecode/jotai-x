@@ -70,6 +70,9 @@ The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) contai
   - **`useValue`**: Hooks for accessing a state within a component, ensuring re-rendering when the state changes. See [useAtomValue](https://jotai.org/docs/core/use-atom#useatomvalue).
     ``` js
       const store = useElementStore();
+
+      const element = useStoreValue('element');
+      // alternative
       const element = store.useElementValue();
       // alternative
       const element = useElementStore().useValue('element');
@@ -78,20 +81,28 @@ The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) contai
     ``` js
       const store = useElementStore();
 
-      // Memoize the selector yourself
+      // Approach 1: Memoize the selector yourself
       const toUpperCase = useCallback((element) => element.toUpperCase(), []);
       // Now it will only re-render if the uppercase value changes
+      const element = useStoreValue(store, 'element', toUpperCase);
+      // alternative
       const element = store.useElementValue(toUpperCase);
       // alternative
       const element = useElementStore().useValue('element', toUpperCase);
 
-      // Pass an dependency array to prevent re-renders
+      // Approach 2: Pass an dependency array to prevent re-renders
       const [n, setN] = useState(0); // n may change during re-renders
-      const numNthCharacter = useCallback((element) => element[n], [n]);
+      const numNthCharacter = useStoreValue(store, 'element', (element) => element[n], [n]);
+      // alternative
+      const numNthCharacter = store.useElementValue((element) => element[n], [n]);
+      // alternative
+      const numNthCharacter = store.useValue('element', (element) => element[n], [n]);
     ```
   - **`useSet`**: Hooks for setting a state within a component. See [useSetAtom](https://jotai.org/docs/core/use-atom#usesetatom).
     ``` js
       const store = useElementStore();
+      const element = useStoreSet(store, 'element');
+      // alternative
       const element = store.useSetElement();
       // alternative
       const element = useElementStore().useSet('element');
@@ -99,6 +110,8 @@ The **`createAtomStore`** function returns an object (**`AtomStoreApi`**) contai
   - **`useState`**: Hooks for accessing and setting a state within a component, ensuring re-rendering when the state changes. See [useAtom](https://jotai.org/docs/core/use-atom).
     ``` js
       const store = useElementStore();
+      const element = useStoreState(store, 'element');
+      // alternative
       const element = store.useElementState();
       // alternative
       const element = useElementStore().useState('element');
