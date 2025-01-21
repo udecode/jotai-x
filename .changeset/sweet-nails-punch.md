@@ -2,4 +2,4 @@
 'jotai-x': patch
 ---
 
-Add hooks `useValueOfJotaiXStore`, `useSetOfJotaiXStore`, `useStateOfJotaiXStore`, `useAtomValueOfJotaiXStore`, `useAtomValueOfJotaiXStore`, `useAtomValueOfJotaiXStore` to ease react-compiler eslint plugin complains
+Add hooks `useStoreValue`, `useStoreSet`, `useStoreState`, `useStoreAtomValue`, `useStoreAtomSet`, `useStoreAtomState` to ease react-compiler eslint plugin complains
