@@ -1,5 +1,11 @@
 # jotai-x
 
+## 2.1.0
+
+### Minor Changes
+
+- [#20](https://github.com/udecode/jotai-x/pull/20) by [@yf-yang](https://github.com/yf-yang) – Add alternative selector and equalityFn support to `useValue`
+
 ## 2.0.0
 
 ### Major Changes
