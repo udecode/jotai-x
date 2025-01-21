@@ -3,7 +3,7 @@ import '@testing-library/jest-dom';
 import React from 'react';
 import { act, render } from '@testing-library/react';
 
-import { createAtomStore } from './createAtomStore';
+import { createAtomStore, useValueOfJotaiXStore } from './createAtomStore';
 
 type TElement = any;
 
@@ -23,7 +23,8 @@ export const { useElementStore, ElementProvider } = createAtomStore(
 export const useElement = <T extends TElement = TElement>(
   pluginKey = SCOPE_ELEMENT
 ): T => {
-  const value = useElementStore(pluginKey).useElementValue();
+  const store = useElementStore(pluginKey);
+  const value = useValueOfJotaiXStore(store, 'element');
 
   if (!value) {
     console.warn(

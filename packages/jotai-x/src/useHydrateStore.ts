@@ -41,8 +41,10 @@ export const useSyncStore = (
     const value = values[key];
     const atom = atoms[key];
 
+    // eslint-disable-next-line react-compiler/react-compiler
     const set = useSetAtom(atom, { store });
 
+    // eslint-disable-next-line react-compiler/react-compiler
     React.useEffect(() => {
       if (value !== undefined && value !== null) {
         set(value);

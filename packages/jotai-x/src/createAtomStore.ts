@@ -150,7 +150,9 @@ export type UseKeyValueApis<O> = {
   [K in keyof O as UseKeyValue<K & string>]: {
     (): O[K] extends Atom<infer V> ? V : never;
     <S>(
-      selector: (v: O[K] extends Atom<infer V> ? V : never) => S,
+      selector: O[K] extends Atom<infer V>
+        ? (v: V, prevSelectorOutput?: S) => S
+        : never,
       deps?: unknown[]
     ): S;
     <S>(
@@ -218,7 +220,9 @@ export type UseParamKeyValueApi<O> = {
   <K extends keyof O>(key: K): O[K] extends Atom<infer V> ? V : never;
   <K extends keyof O, S>(
     key: K,
-    selector: (v: O[K] extends Atom<infer V> ? V : never) => S,
+    selector: O[K] extends Atom<infer V>
+      ? (v: V, prevSelectorOutput?: S) => S
+      : never,
     deps?: unknown[]
   ): S;
   <K extends keyof O, S>(
@@ -291,9 +295,7 @@ export type SubscribeAtomParamApi = <V>(
   atom: Atom<V>
 ) => (callback: (newValue: V) => void) => () => void;
 
-export type UseStoreApi<T, E> = (
-  options?: UseAtomOptionsOrScope
-) => UseKeyValueApis<StoreAtoms<T, E>> &
+export type ReturnOfUseStoreApi<T, E> = UseKeyValueApis<StoreAtoms<T, E>> &
   GetKeyApis<StoreAtoms<T, E>> &
   UseSetKeyApis<StoreAtoms<T, E>> &
   SetKeyApis<StoreAtoms<T, E>> &
@@ -371,6 +373,10 @@ export type AtomStoreApi<
 } & {
   [key in keyof Record<UseNameStore<N>, object>]: UseStoreApi<T, E>;
 };
+
+export type UseStoreApi<T, E> = (
+  options?: UseAtomOptionsOrScope
+) => ReturnOfUseStoreApi<T, E>;
 
 const capitalizeFirstLetter = (str = '') =>
   str.length > 0 ? str[0].toUpperCase() + str.slice(1) : '';
@@ -507,12 +513,12 @@ export const createAtomStore = <
     }
   }
 
-  const useValueAtoms = {} as UseValueRecord<MyStoreAtoms>;
-  const getAtoms = {} as GetRecord<MyStoreAtoms>;
-  const useSetAtoms = {} as UseSetRecord<MyWritableStoreAtoms>;
-  const setAtoms = {} as SetRecord<MyWritableStoreAtoms>;
-  const useStateAtoms = {} as UseStateRecord<MyWritableStoreAtoms>;
-  const subscribeAtoms = {} as SubscribeRecord<MyStoreAtoms>;
+  const atomsOfUseValue = {} as UseValueRecord<MyStoreAtoms>;
+  const atomsOfGet = {} as GetRecord<MyStoreAtoms>;
+  const atomsOfUseSet = {} as UseSetRecord<MyWritableStoreAtoms>;
+  const atomsOfSet = {} as SetRecord<MyWritableStoreAtoms>;
+  const atomsOfUseState = {} as UseStateRecord<MyWritableStoreAtoms>;
+  const atomsOfSubscribe = {} as SubscribeRecord<MyStoreAtoms>;
 
   const useStore = (optionsOrScope: UseAtomOptionsOrScope = {}) => {
     const {
@@ -628,7 +634,7 @@ Please wrap them with useCallback or configure the deps array correctly.`
     const atomConfig = atoms[key as keyof MyStoreAtoms];
     const isWritable: boolean = atomIsWritable[key as keyof MyStoreAtoms];
 
-    (useValueAtoms as any)[key] = (
+    (atomsOfUseValue as any)[key] = (
       store: JotaiStore | undefined,
       optionsOrScope: UseAtomOptionsOrScope = {},
       selector?: (v: any, prevSelectorOutput?: any) => any,
@@ -646,19 +652,19 @@ Please wrap them with useCallback or configure the deps array correctly.`
         deps
       );
 
-    (getAtoms as any)[key] = (
+    (atomsOfGet as any)[key] = (
       store: JotaiStore | undefined,
       optionsOrScope: UseAtomOptionsOrScope = {}
     ) => getAtomWithStore(atomConfig, store, optionsOrScope);
 
-    (subscribeAtoms as any)[key] = (
+    (atomsOfSubscribe as any)[key] = (
       store: JotaiStore | undefined,
       optionsOrScope: UseAtomOptionsOrScope = {},
       callback: (newValue: any) => void
     ) => subscribeAtomWithStore(atomConfig, store, optionsOrScope)(callback);
 
     if (isWritable) {
-      (useSetAtoms as any)[key] = (
+      (atomsOfUseSet as any)[key] = (
         store: JotaiStore | undefined,
         optionsOrScope: UseAtomOptionsOrScope = {}
       ) =>
@@ -668,7 +674,7 @@ Please wrap them with useCallback or configure the deps array correctly.`
           optionsOrScope
         );
 
-      (setAtoms as any)[key] = (
+      (atomsOfSet as any)[key] = (
         store: JotaiStore | undefined,
         optionsOrScope: UseAtomOptionsOrScope = {},
         ...args: any[]
@@ -679,7 +685,7 @@ Please wrap them with useCallback or configure the deps array correctly.`
           optionsOrScope
         )(...args);
 
-      (useStateAtoms as any)[key] = (
+      (atomsOfUseState as any)[key] = (
         store: JotaiStore | undefined,
         optionsOrScope: UseAtomOptionsOrScope = {}
       ) =>
@@ -710,84 +716,85 @@ Please wrap them with useCallback or configure the deps array correctly.`
     return {
       // store.use<Key>Value()
       ...(withStoreAndOptions(
-        useValueAtoms,
+        atomsOfUseValue,
         getUseValueIndex,
         store,
         scopedOptions
       ) as UseKeyValueApis<MyStoreAtoms>),
       // store.get<Key>()
       ...(withStoreAndOptions(
-        getAtoms,
+        atomsOfGet,
         getGetIndex,
         store,
         scopedOptions
       ) as GetKeyApis<MyStoreAtoms>),
       // store.useSet<Key>()
       ...(withStoreAndOptions(
-        useSetAtoms,
+        atomsOfUseSet,
         getUseSetIndex,
         store,
         scopedOptions
       ) as UseSetKeyApis<MyStoreAtoms>),
       // store.set<Key>(...args)
       ...(withStoreAndOptions(
-        setAtoms,
+        atomsOfSet,
         getSetIndex,
         store,
         scopedOptions
       ) as SetKeyApis<MyStoreAtoms>),
       // store.use<Key>State()
       ...(withStoreAndOptions(
-        useStateAtoms,
+        atomsOfUseState,
         getUseStateIndex,
         store,
         scopedOptions
       ) as UseKeyStateApis<MyStoreAtoms>),
       // store.subscribe<Key>(callback)
       ...(withStoreAndOptions(
-        subscribeAtoms,
+        atomsOfSubscribe,
         getSubscribeIndex,
         store,
         scopedOptions
       ) as SubscribeKeyApis<MyStoreAtoms>),
       // store.useValue('key')
       useValue: withKeyAndStoreAndOptions(
-        useValueAtoms,
+        atomsOfUseValue,
         store,
         scopedOptions
       ) as UseParamKeyValueApi<MyStoreAtoms>,
       // store.get('key')
       get: withKeyAndStoreAndOptions(
-        getAtoms,
+        atomsOfGet,
         store,
         scopedOptions
       ) as GetParamKeyApi<MyStoreAtoms>,
       // store.useSet('key')
       useSet: withKeyAndStoreAndOptions(
-        useSetAtoms,
+        atomsOfUseSet,
         store,
         scopedOptions
       ) as UseSetParamKeyApi<MyStoreAtoms>,
       // store.set('key', ...args)
       set: withKeyAndStoreAndOptions(
-        setAtoms,
+        atomsOfSet,
         store,
         scopedOptions
       ) as SetParamKeyApi<MyStoreAtoms>,
       // store.useState('key')
       useState: withKeyAndStoreAndOptions(
-        useStateAtoms,
+        atomsOfUseState,
         store,
         scopedOptions
       ) as UseParamKeyStateApi<MyStoreAtoms>,
       // store.subscribe('key', callback)
       subscribe: withKeyAndStoreAndOptions(
-        subscribeAtoms,
+        atomsOfSubscribe,
         store,
         scopedOptions
       ) as SubscribeParamKeyApi<MyStoreAtoms>,
       // store.useAtomValue(atomConfig)
       useAtomValue: ((atomConfig, selector, equalityFnOrDeps, deps) =>
+        // eslint-disable-next-line react-compiler/react-compiler
         useAtomValueWithStore(
           atomConfig,
           store,
@@ -801,12 +808,14 @@ Please wrap them with useCallback or configure the deps array correctly.`
         getAtomWithStore(atomConfig, store, scopedOptions),
       // store.useSetAtom(atomConfig)
       useSetAtom: (atomConfig) =>
+        // eslint-disable-next-line react-compiler/react-compiler
         useSetAtomWithStore(atomConfig, store, scopedOptions),
       // store.setAtom(atomConfig, ...args)
       setAtom: (atomConfig) =>
         setAtomWithStore(atomConfig, store, scopedOptions),
       // store.useAtomState(atomConfig)
       useAtomState: (atomConfig) =>
+        // eslint-disable-next-line react-compiler/react-compiler
         useAtomStateWithStore(atomConfig, store, scopedOptions),
       // store.subscribeAtom(atomConfig, callback)
       subscribeAtom: (atomConfig) =>
@@ -822,3 +831,106 @@ Please wrap them with useCallback or configure the deps array correctly.`
     name,
   } as any;
 };
+
+export function useValueOfJotaiXStore<T, E, K extends keyof StoreAtoms<T, E>>(
+  store: ReturnOfUseStoreApi<T, E>,
+  key: K
+): StoreAtoms<T, E>[K] extends Atom<infer V> ? V : never;
+export function useValueOfJotaiXStore<
+  T,
+  E,
+  K extends keyof StoreAtoms<T, E>,
+  S,
+>(
+  store: ReturnOfUseStoreApi<T, E>,
+  key: K,
+  selector: StoreAtoms<T, E>[K] extends Atom<infer V>
+    ? (v: V, prevSelectorOutput?: S) => S
+    : never,
+  deps?: unknown[]
+): S;
+export function useValueOfJotaiXStore<
+  T,
+  E,
+  K extends keyof StoreAtoms<T, E>,
+  S,
+>(
+  store: ReturnOfUseStoreApi<T, E>,
+  key: K,
+  selector: StoreAtoms<T, E>[K] extends Atom<infer V>
+    ? ((v: V, prevSelectorOutput?: S) => S) | undefined
+    : never,
+  equalityFn: (prevSelectorOutput: S, selectorOutput: S) => boolean,
+  deps?: unknown[]
+): S;
+export function useValueOfJotaiXStore<
+  T,
+  E,
+  K extends keyof StoreAtoms<T, E>,
+  S,
+>(
+  store: ReturnOfUseStoreApi<T, E>,
+  key: K,
+  selector?: StoreAtoms<T, E>[K] extends Atom<infer V>
+    ? (v: V, prevSelectorOutput?: S) => S
+    : never,
+  equalityFnOrDeps?: any,
+  deps?: unknown[]
+) {
+  return store.useValue(key, selector, equalityFnOrDeps, deps);
+}
+
+export function useSetOfJotaiXStore<T, E, K extends keyof StoreAtoms<T, E>>(
+  store: ReturnOfUseStoreApi<T, E>,
+  key: K
+) {
+  return store.useSet(key);
+}
+
+export function useStateOfJotaiXStore<T, E, K extends keyof StoreAtoms<T, E>>(
+  store: ReturnOfUseStoreApi<T, E>,
+  key: K
+) {
+  return store.useState(key);
+}
+
+export function useAtomValueOfJotaiXStore<T, E, V>(
+  store: ReturnOfUseStoreApi<T, E>,
+  atom: Atom<V>
+): V;
+export function useAtomValueOfJotaiXStore<T, E, V, S>(
+  store: ReturnOfUseStoreApi<T, E>,
+  atom: Atom<V>,
+  selector: (v: V, prevSelectorOutput?: S) => S,
+  deps?: unknown[]
+): S;
+export function useAtomValueOfJotaiXStore<T, E, V, S>(
+  store: ReturnOfUseStoreApi<T, E>,
+  atom: Atom<V>,
+  selector: ((v: V, prevSelectorOutput?: S) => S) | undefined,
+  equalityFn: (prevSelectorOutput: S, selectorOutput: S) => boolean,
+  deps?: unknown[]
+): S;
+export function useAtomValueOfJotaiXStore<T, E, V, S>(
+  store: ReturnOfUseStoreApi<T, E>,
+  atom: Atom<V>,
+  selector?: (v: V, prevSelectorOutput?: S) => S,
+  equalityFnOrDeps?: any,
+  deps?: unknown[]
+) {
+  return store.useAtomValue(atom, selector, equalityFnOrDeps, deps);
+}
+
+export function useSetAtomOfJotaiXStore<T, E, V, A extends unknown[], R>(
+  store: ReturnOfUseStoreApi<T, E>,
+  atom: WritableAtom<V, A, R>
+) {
+  return store.useSetAtom(atom);
+}
+
+export function useAtomStateOfJotaiXStore<T, E, V, A extends unknown[], R>(
+  store: ReturnOfUseStoreApi<T, E>,
+  atom: WritableAtom<V, A, R>
+) {
+  return store.useAtomState(atom);
+}
