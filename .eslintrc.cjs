@@ -13,6 +13,7 @@ module.exports = {
     './config/eslint/bases/regexp.cjs',
     './config/eslint/bases/jest.cjs',
     './config/eslint/bases/react.cjs',
+    './config/eslint/bases/react-compiler.cjs',
     './config/eslint/bases/rtl.cjs',
 
     './config/eslint/bases/unicorn.cjs',
