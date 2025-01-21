@@ -1,5 +1,11 @@
 # jotai-x
 
+## 2.1.1
+
+### Patch Changes
+
+- [#22](https://github.com/udecode/jotai-x/pull/22) by [@yf-yang](https://github.com/yf-yang) – Add hooks `useStoreValue`, `useStoreSet`, `useStoreState`, `useStoreAtomValue`, `useStoreAtomSet`, `useStoreAtomState` to ease react-compiler eslint plugin complains
+
 ## 2.1.0
 
 ### Minor Changes
