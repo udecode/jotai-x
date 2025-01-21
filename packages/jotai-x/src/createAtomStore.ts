@@ -832,16 +832,11 @@ Please wrap them with useCallback or configure the deps array correctly.`
   } as any;
 };
 
-export function useValueOfJotaiXStore<T, E, K extends keyof StoreAtoms<T, E>>(
+export function useStoreValue<T, E, K extends keyof StoreAtoms<T, E>>(
   store: ReturnOfUseStoreApi<T, E>,
   key: K
 ): StoreAtoms<T, E>[K] extends Atom<infer V> ? V : never;
-export function useValueOfJotaiXStore<
-  T,
-  E,
-  K extends keyof StoreAtoms<T, E>,
-  S,
->(
+export function useStoreValue<T, E, K extends keyof StoreAtoms<T, E>, S>(
   store: ReturnOfUseStoreApi<T, E>,
   key: K,
   selector: StoreAtoms<T, E>[K] extends Atom<infer V>
@@ -849,12 +844,7 @@ export function useValueOfJotaiXStore<
     : never,
   deps?: unknown[]
 ): S;
-export function useValueOfJotaiXStore<
-  T,
-  E,
-  K extends keyof StoreAtoms<T, E>,
-  S,
->(
+export function useStoreValue<T, E, K extends keyof StoreAtoms<T, E>, S>(
   store: ReturnOfUseStoreApi<T, E>,
   key: K,
   selector: StoreAtoms<T, E>[K] extends Atom<infer V>
@@ -863,12 +853,7 @@ export function useValueOfJotaiXStore<
   equalityFn: (prevSelectorOutput: S, selectorOutput: S) => boolean,
   deps?: unknown[]
 ): S;
-export function useValueOfJotaiXStore<
-  T,
-  E,
-  K extends keyof StoreAtoms<T, E>,
-  S,
->(
+export function useStoreValue<T, E, K extends keyof StoreAtoms<T, E>, S>(
   store: ReturnOfUseStoreApi<T, E>,
   key: K,
   selector?: StoreAtoms<T, E>[K] extends Atom<infer V>
@@ -880,38 +865,38 @@ export function useValueOfJotaiXStore<
   return store.useValue(key, selector, equalityFnOrDeps, deps);
 }
 
-export function useSetOfJotaiXStore<T, E, K extends keyof StoreAtoms<T, E>>(
+export function useStoreSet<T, E, K extends keyof StoreAtoms<T, E>>(
   store: ReturnOfUseStoreApi<T, E>,
   key: K
 ) {
   return store.useSet(key);
 }
 
-export function useStateOfJotaiXStore<T, E, K extends keyof StoreAtoms<T, E>>(
+export function useStoreState<T, E, K extends keyof StoreAtoms<T, E>>(
   store: ReturnOfUseStoreApi<T, E>,
   key: K
 ) {
   return store.useState(key);
 }
 
-export function useAtomValueOfJotaiXStore<T, E, V>(
+export function useStoreAtomValue<T, E, V>(
   store: ReturnOfUseStoreApi<T, E>,
   atom: Atom<V>
 ): V;
-export function useAtomValueOfJotaiXStore<T, E, V, S>(
+export function useStoreAtomValue<T, E, V, S>(
   store: ReturnOfUseStoreApi<T, E>,
   atom: Atom<V>,
   selector: (v: V, prevSelectorOutput?: S) => S,
   deps?: unknown[]
 ): S;
-export function useAtomValueOfJotaiXStore<T, E, V, S>(
+export function useStoreAtomValue<T, E, V, S>(
   store: ReturnOfUseStoreApi<T, E>,
   atom: Atom<V>,
   selector: ((v: V, prevSelectorOutput?: S) => S) | undefined,
   equalityFn: (prevSelectorOutput: S, selectorOutput: S) => boolean,
   deps?: unknown[]
 ): S;
-export function useAtomValueOfJotaiXStore<T, E, V, S>(
+export function useStoreAtomValue<T, E, V, S>(
   store: ReturnOfUseStoreApi<T, E>,
   atom: Atom<V>,
   selector?: (v: V, prevSelectorOutput?: S) => S,
@@ -921,14 +906,14 @@ export function useAtomValueOfJotaiXStore<T, E, V, S>(
   return store.useAtomValue(atom, selector, equalityFnOrDeps, deps);
 }
 
-export function useSetAtomOfJotaiXStore<T, E, V, A extends unknown[], R>(
+export function useStoreSetAtom<T, E, V, A extends unknown[], R>(
   store: ReturnOfUseStoreApi<T, E>,
   atom: WritableAtom<V, A, R>
 ) {
   return store.useSetAtom(atom);
 }
 
-export function useAtomStateOfJotaiXStore<T, E, V, A extends unknown[], R>(
+export function useStoreAtomState<T, E, V, A extends unknown[], R>(
   store: ReturnOfUseStoreApi<T, E>,
   atom: WritableAtom<V, A, R>
 ) {
