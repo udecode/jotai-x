@@ -1,5 +1,15 @@
 # jotai-x
 
+## 2.2.0
+
+### Minor Changes
+
+- [`c0ec41f`](https://github.com/udecode/jotai-x/commit/c0ec41f1f405f70d59621f675aabf17045abb4da) by [@zbeyens](https://github.com/zbeyens) –
+  - `createAtomStore` now returns new utility hooks to provide a more direct way to access store atoms without having to call `useStore()` first:
+    - `use<Name>State(key, storeOptions)` - Get/set state for a specific key
+    - `use<Name>Value(key, options, deps)` - Get value for a specific key with optional selector and equality function
+    - `use<Name>Set(key, storeOptions)` - Get setter for a specific key
+
 ## 2.1.2
 
 ### Patch Changes
