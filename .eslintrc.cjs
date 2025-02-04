@@ -11,7 +11,7 @@ module.exports = {
     './config/eslint/bases/javascript.cjs',
     './config/eslint/bases/typescript.cjs',
     './config/eslint/bases/regexp.cjs',
-    './config/eslint/bases/jest.cjs',
+    './config/eslint/bases/vitest.cjs',
     './config/eslint/bases/react.cjs',
     './config/eslint/bases/react-compiler.cjs',
     './config/eslint/bases/rtl.cjs',
@@ -29,7 +29,6 @@ module.exports = {
   env: {
     browser: true,
     es6: true,
-    jest: true,
     node: true,
     webextensions: false,
   },

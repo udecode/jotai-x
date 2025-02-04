@@ -9,6 +9,7 @@ module.exports = {
         checkArrowFunctions: false,
       },
     ],
+    'unicorn/prefer-module': 'off',
     'unicorn/expiring-todo-comments': 'off',
     'unicorn/filename-case': 'off',
     'unicorn/no-array-callback-reference': 'off',

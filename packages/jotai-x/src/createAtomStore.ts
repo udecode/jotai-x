@@ -145,6 +145,11 @@ type SubscribeAtomFn = <V>(
   options?: UseAtomOptionsOrScope
 ) => (callback: (newValue: V) => void) => () => void;
 
+type UseValueOptions<V, S> = {
+  selector?: (v: V, prevSelectorOutput?: S) => S;
+  equalityFn?: (prev: S, next: S) => boolean;
+} & UseAtomOptions;
+
 // store.use<Key>Value()
 export type UseKeyValueApis<O> = {
   [K in keyof O as UseKeyValue<K & string>]: {
@@ -358,6 +363,32 @@ export type ReturnOfUseStoreApi<T, E> = UseKeyValueApis<StoreAtoms<T, E>> &
     store: JotaiStore | undefined;
   };
 
+type UseKeyStateUtil<T, E> = <K extends keyof StoreAtoms<T, E>>(
+  key: K,
+  options?: UseAtomOptionsOrScope
+) => StoreAtoms<T, E>[K] extends WritableAtom<infer V, infer A, infer R>
+  ? [V, (...args: A) => R]
+  : never;
+
+type UseKeyValueUtil<T, E> = <
+  K extends keyof StoreAtoms<T, E>,
+  S = StoreAtoms<T, E>[K] extends Atom<infer V> ? V : never,
+>(
+  key: K,
+  options?: UseValueOptions<
+    StoreAtoms<T, E>[K] extends Atom<infer V> ? V : never,
+    S
+  >,
+  deps?: unknown[]
+) => S;
+
+type UseKeySetUtil<T, E> = <K extends keyof StoreAtoms<T, E>>(
+  key: K,
+  options?: UseAtomOptionsOrScope
+) => StoreAtoms<T, E>[K] extends WritableAtom<infer _V, infer A, infer R>
+  ? (...args: A) => R
+  : never;
+
 export type AtomStoreApi<
   T extends object,
   E extends AtomRecord<object>,
@@ -372,6 +403,18 @@ export type AtomStoreApi<
   [key in keyof Record<NameStore<N>, object>]: StoreApi<T, E, N>;
 } & {
   [key in keyof Record<UseNameStore<N>, object>]: UseStoreApi<T, E>;
+} & {
+  [key in keyof Record<`use${Capitalize<N>}State`, object>]: UseKeyStateUtil<
+    T,
+    E
+  >;
+} & {
+  [key in keyof Record<`use${Capitalize<N>}Value`, object>]: UseKeyValueUtil<
+    T,
+    E
+  >;
+} & {
+  [key in keyof Record<`use${Capitalize<N>}Set`, object>]: UseKeySetUtil<T, E>;
 };
 
 export type UseStoreApi<T, E> = (
@@ -826,10 +869,55 @@ Please wrap them with useCallback or configure the deps array correctly.`
     };
   };
 
+  const useNameState = <K extends keyof StoreAtoms<T, E>>(
+    key: K,
+    options?: UseAtomOptionsOrScope
+  ) => {
+    const store = useStore(options) ?? getDefaultStore();
+    return useAtomStateWithStore(atoms[key] as any, store, options);
+  };
+
+  const useNameValue = <
+    K extends keyof StoreAtoms<T, E>,
+    S = StoreAtoms<T, E>[K] extends Atom<infer V> ? V : never,
+  >(
+    key: K,
+    {
+      equalityFn,
+      selector,
+      ...options
+    }: UseValueOptions<
+      StoreAtoms<T, E>[K] extends Atom<infer V> ? V : never,
+      S
+    > = {},
+    deps?: unknown[]
+  ) => {
+    const store = useStore(options) ?? getDefaultStore();
+    return useAtomValueWithStore(
+      atoms[key],
+      store,
+      options,
+      selector as any,
+      equalityFn as any,
+      deps
+    );
+  };
+
+  const useNameSet = <K extends keyof StoreAtoms<T, E>>(
+    key: K,
+    options?: UseAtomOptionsOrScope
+  ) => {
+    const store = useStore(options) ?? getDefaultStore();
+    return useSetAtomWithStore(atoms[key] as any, store, options);
+  };
+
   return {
     [providerIndex]: Provider,
     [useStoreIndex]: useStoreApi,
     [storeIndex]: storeApi,
+    [`use${capitalizeFirstLetter(name)}State`]: useNameState,
+    [`use${capitalizeFirstLetter(name)}Value`]: useNameValue,
+    [`use${capitalizeFirstLetter(name)}Set`]: useNameSet,
     name,
   } as any;
 };

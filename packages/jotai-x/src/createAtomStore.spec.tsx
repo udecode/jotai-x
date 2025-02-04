@@ -242,8 +242,16 @@ describe('createAtomStore', () => {
       becomeFriends: () => {},
     };
 
-    const { myTestStoreStore, useMyTestStoreStore, MyTestStoreProvider } =
-      createAtomStore(initialTestStoreValue, { name: 'myTestStore' as const });
+    const {
+      myTestStoreStore,
+      useMyTestStoreStore,
+      MyTestStoreProvider,
+      useMyTestStoreSet,
+      useMyTestStoreState,
+      useMyTestStoreValue,
+    } = createAtomStore(initialTestStoreValue, {
+      name: 'myTestStore' as const,
+    });
 
     const ReadOnlyConsumer = () => {
       const name = useMyTestStoreStore().useNameValue();
@@ -414,6 +422,7 @@ describe('createAtomStore', () => {
       // Just guarantee that the react compiler doesn't complain
       /* eslint-enable react-compiler/react-compiler */
       const store = useMyTestStoreStore();
+      const becomeFriends0 = useMyTestStoreValue('becomeFriends');
       const becomeFriends1 = useStoreValue(store, 'becomeFriends');
       const becomeFriends2 = useStoreAtomValue(
         store,
@@ -424,6 +433,7 @@ describe('createAtomStore', () => {
         <button
           type="button"
           onClick={() => {
+            becomeFriends0();
             becomeFriends1();
             becomeFriends2();
           }}
@@ -507,6 +517,7 @@ describe('createAtomStore', () => {
       // Just guarantee that the react compiler doesn't complain
       /* eslint-enable react-compiler/react-compiler */
       const store = useMyTestStoreStore();
+      const setName = useMyTestStoreSet('name');
       const setBecomeFriends = useStoreSet(store, 'becomeFriends');
       const [becameFriends, setBecameFriends] = React.useState(false);
 
@@ -514,7 +525,10 @@ describe('createAtomStore', () => {
         <>
           <button
             type="button"
-            onClick={() => setBecomeFriends(() => setBecameFriends(true))}
+            onClick={() => {
+              setName('new');
+              setBecomeFriends(() => setBecameFriends(true));
+            }}
           >
             Change Callback
           </button>
@@ -603,6 +617,7 @@ describe('createAtomStore', () => {
       // Just guarantee that the react compiler doesn't complain
       /* eslint-enable react-compiler/react-compiler */
       const store = useMyTestStoreStore();
+      const [name, setName] = useMyTestStoreState('name');
       const [, setBecomeFriends] = useStoreState(store, 'becomeFriends');
       const [becameFriends, setBecameFriends] = React.useState(false);
 
@@ -610,9 +625,12 @@ describe('createAtomStore', () => {
         <>
           <button
             type="button"
-            onClick={() => setBecomeFriends(() => setBecameFriends(true))}
+            onClick={() => {
+              setName('new');
+              setBecomeFriends(() => setBecameFriends(true));
+            }}
           >
-            Change Callback
+            Change Callback {name}
           </button>
 
           <div>useBecameFriends: {becameFriends.toString()}</div>
@@ -791,8 +809,8 @@ describe('createAtomStore', () => {
     });
 
     it('can subscribe', () => {
-      const subName = jest.fn();
-      const subAge = jest.fn();
+      const subName = vi.fn();
+      const subAge = vi.fn();
       const { getByText } = render(
         <MutableProvider>
           <SubscribeConsumer subName={subName} subAge={subAge} />
@@ -820,8 +838,8 @@ describe('createAtomStore', () => {
     });
 
     it('can subscribe with key param', () => {
-      const subName = jest.fn();
-      const subAge = jest.fn();
+      const subName = vi.fn();
+      const subAge = vi.fn();
       const { getByText } = render(
         <MutableProvider>
           <SubscribeConsumerWithKeyParam subName={subName} subAge={subAge} />
@@ -1014,9 +1032,10 @@ describe('createAtomStore', () => {
         </BecomeFriendsProvider>
       );
 
-      act(() => getByText('Change Callback').click());
+      act(() => getByText('Change Callback John').click());
       expect(getByText('useBecameFriends: false')).toBeInTheDocument();
       act(() => getByText('Become Friends').click());
+      expect(getByText('Change Callback new')).toBeInTheDocument();
       expect(getByText('useBecameFriends: true')).toBeInTheDocument();
     });
   });
