@@ -1,5 +1,11 @@
 # jotai-x
 
+## 2.1.2
+
+### Patch Changes
+
+- Add `suppressWarnings` option to `createAtomStore` options to control store-level warning behavior when accessing store outside provider
+
 ## 2.1.1
 
 ### Patch Changes

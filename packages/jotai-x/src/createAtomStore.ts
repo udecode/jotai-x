@@ -442,6 +442,7 @@ export interface CreateAtomStoreOptions<
   effect?: React.FC;
   extend?: (atomsWithoutExtend: StoreAtomsWithoutExtend<T>) => E;
   infiniteRenderDetectionLimit?: number;
+  suppressWarnings?: boolean;
 }
 
 /**
@@ -468,6 +469,7 @@ export const createAtomStore = <
     effect,
     extend,
     infiniteRenderDetectionLimit = 100_000,
+    suppressWarnings,
   }: CreateAtomStoreOptions<T, E, N>
 ): AtomStoreApi<T, E, N> => {
   type MyStoreAtoms = StoreAtoms<T, E>;
@@ -524,7 +526,7 @@ export const createAtomStore = <
     const {
       scope,
       store,
-      warnIfNoStore = true,
+      warnIfNoStore = !suppressWarnings,
     } = convertScopeShorthand(optionsOrScope);
     const contextStore = useAtomStore(name, scope, !store && warnIfNoStore);
     return store ?? contextStore;
