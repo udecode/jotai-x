@@ -4,7 +4,6 @@
   "workspaces": [
     "packages/**"
   ],
-  "type": "module",
   "scripts": {
     "build": "yarn g:build",
     "build:watch": "ROARR_LOG=true turbowatch ./config/turbowatch.config.ts | roarr",
