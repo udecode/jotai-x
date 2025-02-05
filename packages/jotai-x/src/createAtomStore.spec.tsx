@@ -1197,18 +1197,16 @@ describe('createAtomStore', () => {
       age: 98,
     };
 
-    const { userStore, useUserStore, UserProvider } = createAtomStore(
-      initialUser,
-      {
+    const { userStore, useUserStore, useUserValue, UserProvider } =
+      createAtomStore(initialUser, {
         name: 'user' as const,
         extend: ({ name, age }) => ({
           bio: atom((get) => `${get(name)} is ${get(age)} years old`),
         }),
-      }
-    );
+      });
 
     const ReadOnlyConsumer = () => {
-      const bio = useUserStore().useBioValue();
+      const bio = useUserValue('bio');
 
       return <div>{bio}</div>;
     };

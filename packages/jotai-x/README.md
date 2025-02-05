@@ -1,4 +1,4 @@
-# JotaiX
+# Jotai X
 
 An extension for [Jotai](https://github.com/pmndrs/jotai) that auto-generates type-safe hooks and utilities for your state. Built with TypeScript and React in mind.
 
