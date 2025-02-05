@@ -102,66 +102,136 @@ Available options:
 }
 ```
 
-### Reading and Writing State
+### Store API
 
-The API is designed to be intuitive. Here's how you work with state:
-
-#### Using Hooks (Recommended)
+The `createAtomStore` function returns an object with the following:
 
 ```ts
-// Get a single value
-const name = useUserValue('name');
-const loggedIn = useUserValue('loggedIn');
+const {
+  // Store name used as prefix
+  name: string,
 
-// Get a setter
-const setName = useUserSet('name');
-const setLoggedIn = useUserSet('loggedIn');
+  // Store hook returning all utilities
+  useAppStore: () => StoreApi,
 
-// Get both value and setter
-const [name, setName] = useUserState('name');
-const [loggedIn, setLoggedIn] = useUserState('loggedIn');
+  // Direct hooks for state management
+  useAppValue: (key: string, options?) => Value,
+  useAppSet: (key: string) => SetterFn,
+  useAppState: (key: string) => [Value, SetterFn],
 
-// With selector
-const upperName = useUserValue('name', (name) => name.toUpperCase());
+  // Provider component
+  AppProvider: React.FC<ProviderProps>,
 
-// With selector and deps
-const nthChar = useUserValue('name', (name) => name[n], [n]);
+  // Record of all atoms in the store
+  appStore: {
+    atom: Record<string, Atom>
+  }
+} = createAtomStore({ ... }, { name: 'app' });
 ```
 
-### React Hooks
+### Reading and Writing State
 
-#### `useStoreValue(key, selector?, deps?)`
+There are three ways to interact with the store state:
 
-Subscribe to a single value. Optionally pass a selector and deps array:
+#### 1. Hooks (Recommended)
+
+The most straightforward way using hooks returned by `createAtomStore`:
+
+```ts
+// Get value
+const name = useAppValue('name');
+const stars = useAppValue('stars');
+
+// Set value
+const setName = useAppSet('name');
+const setStars = useAppSet('stars');
+
+// Get both value and setter
+const [name, setName] = useAppState('name');
+const [stars, setStars] = useAppState('stars');
+
+// With selector and deps
+const upperName = useAppValue('name', {
+  selector: (name) => name.toUpperCase(),
+  deps: []
+});
+```
+
+#### 2. Store Instance Methods
+
+Using the store instance from `useAppStore()`:
+
+```ts
+const store = useAppStore();
+
+// By key
+store.get('name'); // Get value
+store.set('name', 'value'); // Set value
+store.subscribe('name', (value) => console.log(value)); // Subscribe to changes
+
+// Direct access
+store.getName(); // Get value
+store.setName('value'); // Set value
+store.subscribeName((value) => console.log(value)); // Subscribe to changes
+```
+
+#### 3. Raw Atom Access
+
+For advanced use cases, you can work directly with atoms:
+
+```ts
+const store = useAppStore();
+
+// Access atoms
+store.getAtom(someAtom); // Get atom value
+store.setAtom(someAtom, 'value'); // Set atom value
+store.subscribeAtom(someAtom, (value) => {}); // Subscribe to atom
+
+// Access underlying Jotai store
+const jotaiStore = store.store;
+```
+
+### Hook API Reference
+
+#### `use<Name>Value(key, options?)`
+
+Subscribe to a single value with optional selector and deps:
 
 ```ts
 // Basic usage
-const name = useUserValue('name');
+const name = useAppValue('name');
 
 // With selector
-const upperName = useUserValue('name', (name) => name.toUpperCase());
+const upperName = useAppValue('name', {
+  selector: (name) => name.toUpperCase(),
+  deps: [] // Optional deps array
+});
 
-// With selector and deps
-const nthChar = useUserValue('name', (name) => name[n], [n]);
+// With equality function
+const name = useAppValue('name', {
+  selector: (name) => name,
+  equalityFn: (prev, next) => prev.length === next.length
+});
 ```
 
-#### `useStoreSet(key)`
+#### `use<Name>Set(key)`
 
 Get a setter function for a value:
 
 ```ts
-// Basic usage
-const setName = useUserSet('name');
+const setName = useAppSet('name');
+setName('new value');
+setName((prev) => prev.toUpperCase());
 ```
 
-#### `useStoreState(key)`
+#### `use<Name>State(key)`
 
-Get a value and its setter, just like React's `useState`:
+Get both value and setter, like React's `useState`:
 
 ```tsx
 function UserForm() {
-  const [name, setName] = useUserState('name');
-  const [email, setEmail] = useUserState('email');
+  const [name, setName] = useAppState('name');
+  const [email, setEmail] = useAppState('email');
 
   return (
     <form>
@@ -174,18 +244,45 @@ function UserForm() {
 
 ### Provider-Based Store Hydration
 
-The provider component handles hydrating and syncing the store's state:
+The provider component handles store initialization and state synchronization:
 
 ```tsx
+type ProviderProps<T> = {
+  // Initial values for atoms, hydrated once on mount
+  initialValues?: Partial<T>;
+
+  // Dynamic values for controlled state
+  ...Partial<T>;
+
+  // Optional custom store instance
+  store?: JotaiStore;
+
+  // Optional scope for nested providers
+  scope?: string;
+
+  // Optional key to reset the store
+  resetKey?: any;
+
+  children: React.ReactNode;
+};
+
 function App() {
   return (
     <UserProvider
+      // Initial values hydrated on mount
       initialValues={{
         name: 'Alice',
-        onUpdateName: (name) => console.log(name),
+        email: 'alice@example.com'
       }}
-      // Alternative to initialValues
-      name="Alice"
+
+      // Controlled values that sync with the store
+      name="Bob"
+
+      // Optional scope for nested providers
+      scope="user1"
+
+      // Optional key to reset store state
+      resetKey={version}
     >
       <UserProfile />
     </UserProvider>
