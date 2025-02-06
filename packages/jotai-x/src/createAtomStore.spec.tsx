@@ -8,10 +8,10 @@ import { splitAtom } from 'jotai/utils';
 
 import {
   createAtomStore,
+  useAtomStoreSet,
+  useAtomStoreState,
+  useAtomStoreValue,
   useStoreAtomValue,
-  useStoreSet,
-  useStoreState,
-  useStoreValue,
 } from './createAtomStore';
 
 describe('createAtomStore', () => {
@@ -487,7 +487,7 @@ describe('createAtomStore', () => {
       /* eslint-enable react-compiler/react-compiler */
       const store = useMyTestStoreStore();
       const becomeFriends0 = useMyTestStoreValue('becomeFriends');
-      const becomeFriends1 = useStoreValue(store, 'becomeFriends');
+      const becomeFriends1 = useAtomStoreValue(store, 'becomeFriends');
       const becomeFriends2 = useStoreAtomValue(
         store,
         myTestStoreStore.atom.becomeFriends
@@ -582,7 +582,7 @@ describe('createAtomStore', () => {
       /* eslint-enable react-compiler/react-compiler */
       const store = useMyTestStoreStore();
       const setName = useMyTestStoreSet('name');
-      const setBecomeFriends = useStoreSet(store, 'becomeFriends');
+      const setBecomeFriends = useAtomStoreSet(store, 'becomeFriends');
       const [becameFriends, setBecameFriends] = React.useState(false);
 
       return (
@@ -682,7 +682,7 @@ describe('createAtomStore', () => {
       /* eslint-enable react-compiler/react-compiler */
       const store = useMyTestStoreStore();
       const [name, setName] = useMyTestStoreState('name');
-      const [, setBecomeFriends] = useStoreState(store, 'becomeFriends');
+      const [, setBecomeFriends] = useAtomStoreState(store, 'becomeFriends');
       const [becameFriends, setBecameFriends] = React.useState(false);
 
       return (

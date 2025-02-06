@@ -5,7 +5,7 @@ An extension for [Jotai](https://github.com/pmndrs/jotai) that auto-generates ty
 ## Features
 
 - Auto-generated type-safe hooks for each state field
-- Simple patterns: `useStoreValue('name')` and `useStoreSet('name', value)`
+- Simple patterns: `use<StoreName>Value(key)` and `use<StoreName>Set(key, value)`
 - Extend your store with computed values using `extend`
 - Built-in support for hydration, synchronization, and scoped providers
 
@@ -413,11 +413,13 @@ useUserValue('name');
 
 ```ts
 // Before
+const { useAppStore } = createAtomStore({ name: 'Alice' }, { name: 'app' });
 const name = useAppStore().get.name();
 const setName = useAppStore().set.name();
 const [name, setName] = useAppStore().use.name();
 
 // Now
+const { useAppStore, useAppValue, useAppSet, useAppState } = createAtomStore({ name: 'Alice' }, { name: 'app' });
 const name = useAppValue('name');
 const setName = useAppSet('name');
 const [name, setName] = useAppState('name');

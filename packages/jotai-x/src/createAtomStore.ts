@@ -922,11 +922,11 @@ Please wrap them with useCallback or configure the deps array correctly.`
   } as any;
 };
 
-export function useStoreValue<T, E, K extends keyof StoreAtoms<T, E>>(
+export function useAtomStoreValue<T, E, K extends keyof StoreAtoms<T, E>>(
   store: ReturnOfUseStoreApi<T, E>,
   key: K
 ): StoreAtoms<T, E>[K] extends Atom<infer V> ? V : never;
-export function useStoreValue<T, E, K extends keyof StoreAtoms<T, E>, S>(
+export function useAtomStoreValue<T, E, K extends keyof StoreAtoms<T, E>, S>(
   store: ReturnOfUseStoreApi<T, E>,
   key: K,
   selector: StoreAtoms<T, E>[K] extends Atom<infer V>
@@ -934,7 +934,7 @@ export function useStoreValue<T, E, K extends keyof StoreAtoms<T, E>, S>(
     : never,
   deps?: unknown[]
 ): S;
-export function useStoreValue<T, E, K extends keyof StoreAtoms<T, E>, S>(
+export function useAtomStoreValue<T, E, K extends keyof StoreAtoms<T, E>, S>(
   store: ReturnOfUseStoreApi<T, E>,
   key: K,
   selector: StoreAtoms<T, E>[K] extends Atom<infer V>
@@ -943,7 +943,7 @@ export function useStoreValue<T, E, K extends keyof StoreAtoms<T, E>, S>(
   equalityFn: (prevSelectorOutput: S, selectorOutput: S) => boolean,
   deps?: unknown[]
 ): S;
-export function useStoreValue<T, E, K extends keyof StoreAtoms<T, E>, S>(
+export function useAtomStoreValue<T, E, K extends keyof StoreAtoms<T, E>, S>(
   store: ReturnOfUseStoreApi<T, E>,
   key: K,
   selector?: StoreAtoms<T, E>[K] extends Atom<infer V>
@@ -955,14 +955,14 @@ export function useStoreValue<T, E, K extends keyof StoreAtoms<T, E>, S>(
   return store.useValue(key, selector, equalityFnOrDeps, deps);
 }
 
-export function useStoreSet<T, E, K extends keyof StoreAtoms<T, E>>(
+export function useAtomStoreSet<T, E, K extends keyof StoreAtoms<T, E>>(
   store: ReturnOfUseStoreApi<T, E>,
   key: K
 ) {
   return store.useSet(key);
 }
 
-export function useStoreState<T, E, K extends keyof StoreAtoms<T, E>>(
+export function useAtomStoreState<T, E, K extends keyof StoreAtoms<T, E>>(
   store: ReturnOfUseStoreApi<T, E>,
   key: K
 ) {
