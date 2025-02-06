@@ -153,8 +153,7 @@ const [stars, setStars] = useAppState('stars');
 // With selector and deps
 const upperName = useAppValue('name', {
   selector: (name) => name.toUpperCase(),
-  deps: []
-});
+}, []);
 ```
 
 #### 2. Store Instance Methods
@@ -204,14 +203,14 @@ const name = useAppValue('name');
 // With selector
 const upperName = useAppValue('name', {
   selector: (name) => name.toUpperCase(),
-  deps: [] // Optional deps array
-});
+}, [] // if selector is not memoized, provide deps array
+);
 
 // With equality function
 const name = useAppValue('name', {
   selector: (name) => name,
   equalityFn: (prev, next) => prev.length === next.length
-});
+}, []);
 ```
 
 #### `use<Name>Set(key)`
@@ -404,7 +403,7 @@ const selector = useCallback((name) => name.toUpperCase(), []);
 useUserValue('name', { selector });
 
 // ✅ Correct - provide deps array
-useUserValue('name', { selector: (name) => name.toUpperCase(), deps: [] });
+useUserValue('name', { selector: (name) => name.toUpperCase() }, []);
 
 // ✅ Correct - no selector
 useUserValue('name');
