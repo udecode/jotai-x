@@ -493,10 +493,10 @@ export interface CreateAtomStoreOptions<
  * Each property will have a getter and setter.
  *
  * @example
- * const { exampleStore, useExampleStore } = createAtomStore({ count: 1, say: 'hello' }, { name: 'example' as const })
- * const [count, setCount] = useExampleStore().useCountState()
- * const say = useExampleStore().useSayValue()
- * const setSay = useExampleStore().useSetSay()
+ * const { exampleStore, useExampleStore, useExampleValue, useExampleState, useExampleSet } = createAtomStore({ count: 1, say: 'hello' }, { name: 'example' as const })
+ * const [count, setCount] = useExampleState()
+ * const say = useExampleValue('say')
+ * const setSay = useExampleSet('say')
  * setSay('world')
  * const countAtom = exampleStore.atom.count
  */
@@ -591,7 +591,7 @@ export const createAtomStore = <
       if (renderCount > infiniteRenderDetectionLimit) {
         throw new Error(
           `
-use<Key>Value/useValue has rendered ${infiniteRenderDetectionLimit} times in the same render.
+use<Key>Value/useValue/use<StoreName>Value has rendered ${infiniteRenderDetectionLimit} times in the same render.
 It is very likely to have fallen into an infinite loop.
 That is because you do not memoize the selector/equalityFn function param.
 Please wrap them with useCallback or configure the deps array correctly.`
@@ -898,8 +898,8 @@ Please wrap them with useCallback or configure the deps array correctly.`
       store,
       options,
       selector as any,
-      equalityFn as any,
-      deps
+      equalityFn ?? deps,
+      equalityFn && deps
     );
   };
 

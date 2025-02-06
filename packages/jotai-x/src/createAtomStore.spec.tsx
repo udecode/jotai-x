@@ -29,10 +29,14 @@ describe('createAtomStore', () => {
       arr: INITIAL_ARR,
     };
 
-    const { useMyTestStoreStore, MyTestStoreProvider } = createAtomStore(
-      initialTestStoreValue,
-      { name: 'myTestStore' as const }
-    );
+    const {
+      myTestStoreStore,
+      useMyTestStoreStore,
+      MyTestStoreProvider,
+      useMyTestStoreValue,
+    } = createAtomStore(initialTestStoreValue, {
+      name: 'myTestStore' as const,
+    });
 
     let numRenderCount = 0;
     const NumRenderer = () => {
@@ -92,6 +96,24 @@ describe('createAtomStore', () => {
       );
     };
 
+    let arrNumRenderCountWithOneHook = 0;
+    const ArrNumRendererWithOneHook = () => {
+      arrNumRenderCountWithOneHook += 1;
+      const num = useMyTestStoreValue('num');
+      const arrNum = useMyTestStoreValue(
+        'arr',
+        {
+          selector: (v) => v[num],
+        },
+        [num]
+      );
+      return (
+        <div>
+          <div>arrNumWithOneHook: {arrNum}</div>
+        </div>
+      );
+    };
+
     let arrNumRenderWithDepsCount = 0;
     const ArrNumRendererWithDeps = () => {
       arrNumRenderWithDepsCount += 1;
@@ -105,8 +127,28 @@ describe('createAtomStore', () => {
       );
     };
 
+    let arrNumRenderWithDepsAndAtomCount = 0;
+    const ArrNumRendererWithDepsAndAtom = () => {
+      arrNumRenderWithDepsAndAtomCount += 1;
+      const store = useMyTestStoreStore();
+      const numAtom = myTestStoreStore.atom.num;
+      const num = store.useAtomValue(numAtom);
+      const arrAtom = myTestStoreStore.atom.arr;
+      const arrNum = store.useAtomValue(arrAtom, (v) => v[num], [num]);
+      return (
+        <div>
+          <div>arrNumWithDepsAndAtom: {arrNum}</div>
+        </div>
+      );
+    };
+
     const BadSelectorRenderer = () => {
       const arr0 = useMyTestStoreStore().useArrValue((v) => v[0]);
+      return <div>{arr0}</div>;
+    };
+
+    const BadSelectorRenderer2 = () => {
+      const arr0 = useMyTestStoreValue('arr', { selector: (v) => v[0] });
       return <div>{arr0}</div>;
     };
 
@@ -154,7 +196,9 @@ describe('createAtomStore', () => {
           <Arr0Renderer />
           <Arr1Renderer />
           <ArrNumRenderer />
+          <ArrNumRendererWithOneHook />
           <ArrNumRendererWithDeps />
+          <ArrNumRendererWithDepsAndAtom />
           <Buttons />
         </MyTestStoreProvider>
       );
@@ -166,7 +210,9 @@ describe('createAtomStore', () => {
       expect(arr0RenderCount).toBe(2);
       expect(arr1RenderCount).toBe(2);
       expect(arrNumRenderCount).toBe(2);
+      expect(arrNumRenderCountWithOneHook).toBe(2);
       expect(arrNumRenderWithDepsCount).toBe(2);
+      expect(arrNumRenderWithDepsAndAtomCount).toBe(2);
       expect(getByText('arrNum: alice')).toBeInTheDocument();
       expect(getByText('arrNumWithDeps: alice')).toBeInTheDocument();
 
@@ -177,7 +223,9 @@ describe('createAtomStore', () => {
       expect(arr0RenderCount).toBe(2);
       expect(arr1RenderCount).toBe(2);
       expect(arrNumRenderCount).toBe(5);
+      expect(arrNumRenderCountWithOneHook).toBe(5);
       expect(arrNumRenderWithDepsCount).toBe(5);
+      expect(arrNumRenderWithDepsAndAtomCount).toBe(5);
       expect(getByText('arrNum: bob')).toBeInTheDocument();
       expect(getByText('arrNumWithDeps: bob')).toBeInTheDocument();
 
@@ -188,7 +236,9 @@ describe('createAtomStore', () => {
       expect(arr0RenderCount).toBe(2);
       expect(arr1RenderCount).toBe(2);
       expect(arrNumRenderCount).toBe(5);
+      expect(arrNumRenderCountWithOneHook).toBe(5);
       expect(arrNumRenderWithDepsCount).toBe(5);
+      expect(arrNumRenderWithDepsAndAtomCount).toBe(5);
       expect(getByText('arrNum: bob')).toBeInTheDocument();
       expect(getByText('arrNumWithDeps: bob')).toBeInTheDocument();
 
@@ -199,7 +249,9 @@ describe('createAtomStore', () => {
       expect(arr0RenderCount).toBe(2);
       expect(arr1RenderCount).toBe(2);
       expect(arrNumRenderCount).toBe(5);
+      expect(arrNumRenderCountWithOneHook).toBe(5);
       expect(arrNumRenderWithDepsCount).toBe(5);
+      expect(arrNumRenderWithDepsAndAtomCount).toBe(5);
       expect(getByText('arrNum: bob')).toBeInTheDocument();
       expect(getByText('arrNumWithDeps: bob')).toBeInTheDocument();
 
@@ -210,7 +262,9 @@ describe('createAtomStore', () => {
       expect(arr0RenderCount).toBe(3);
       expect(arr1RenderCount).toBe(2);
       expect(arrNumRenderCount).toBe(8);
+      expect(arrNumRenderCountWithOneHook).toBe(8);
       expect(arrNumRenderWithDepsCount).toBe(8);
+      expect(arrNumRenderWithDepsAndAtomCount).toBe(8);
       expect(getByText('arrNum: ava')).toBeInTheDocument();
       expect(getByText('arrNumWithDeps: ava')).toBeInTheDocument();
     });
@@ -220,6 +274,16 @@ describe('createAtomStore', () => {
         render(
           <MyTestStoreProvider>
             <BadSelectorRenderer />
+          </MyTestStoreProvider>
+        )
+      ).toThrow();
+    });
+
+    it('Throw error is user does memoize selector 2', () => {
+      expect(() =>
+        render(
+          <MyTestStoreProvider>
+            <BadSelectorRenderer2 />
           </MyTestStoreProvider>
         )
       ).toThrow();
