@@ -1,5 +1,18 @@
 # jotai-x
 
+## 2.3.0
+
+### Minor Changes
+
+- [#27](https://github.com/udecode/jotai-x/pull/27) by [@zbeyens](https://github.com/zbeyens) –
+  - Rename `useStoreValue` to `useAtomStoreValue`
+  - Rename `useStoreSet` to `useAtomStoreSet`
+  - Rename `useStoreState` to `useAtomStoreState`
+
+### Patch Changes
+
+- [#25](https://github.com/udecode/jotai-x/pull/25) by [@yf-yang](https://github.com/yf-yang) – Fix `deps` param
+
 ## 2.2.0
 
 ### Minor Changes
