@@ -2,8 +2,6 @@ import React from 'react';
 import { getDefaultStore, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { selectAtom, useHydrateAtoms } from 'jotai/utils';
 
-
-
 import { atomWithFn } from './atomWithFn';
 import { createAtomProvider, useAtomStore } from './createAtomProvider';
 
@@ -900,8 +898,8 @@ Please wrap them with useCallback or configure the deps array correctly.`
       store,
       options,
       selector as any,
-      equalityFn as any,
-      deps
+      equalityFn ?? deps,
+      equalityFn && deps
     );
   };
 

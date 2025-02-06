@@ -29,8 +29,14 @@ describe('createAtomStore', () => {
       arr: INITIAL_ARR,
     };
 
-    const { useMyTestStoreStore, MyTestStoreProvider, useMyTestStoreValue } =
-      createAtomStore(initialTestStoreValue, { name: 'myTestStore' as const });
+    const {
+      myTestStoreStore,
+      useMyTestStoreStore,
+      MyTestStoreProvider,
+      useMyTestStoreValue,
+    } = createAtomStore(initialTestStoreValue, {
+      name: 'myTestStore' as const,
+    });
 
     let numRenderCount = 0;
     const NumRenderer = () => {
@@ -121,6 +127,21 @@ describe('createAtomStore', () => {
       );
     };
 
+    let arrNumRenderWithDepsAndAtomCount = 0;
+    const ArrNumRendererWithDepsAndAtom = () => {
+      arrNumRenderWithDepsAndAtomCount += 1;
+      const store = useMyTestStoreStore();
+      const numAtom = myTestStoreStore.atom.num;
+      const num = store.useAtomValue(numAtom);
+      const arrAtom = myTestStoreStore.atom.arr;
+      const arrNum = store.useAtomValue(arrAtom, (v) => v[num], [num]);
+      return (
+        <div>
+          <div>arrNumWithDepsAndAtom: {arrNum}</div>
+        </div>
+      );
+    };
+
     const BadSelectorRenderer = () => {
       const arr0 = useMyTestStoreStore().useArrValue((v) => v[0]);
       return <div>{arr0}</div>;
@@ -177,6 +198,7 @@ describe('createAtomStore', () => {
           <ArrNumRenderer />
           <ArrNumRendererWithOneHook />
           <ArrNumRendererWithDeps />
+          <ArrNumRendererWithDepsAndAtom />
           <Buttons />
         </MyTestStoreProvider>
       );
@@ -190,6 +212,7 @@ describe('createAtomStore', () => {
       expect(arrNumRenderCount).toBe(2);
       expect(arrNumRenderCountWithOneHook).toBe(2);
       expect(arrNumRenderWithDepsCount).toBe(2);
+      expect(arrNumRenderWithDepsAndAtomCount).toBe(2);
       expect(getByText('arrNum: alice')).toBeInTheDocument();
       expect(getByText('arrNumWithDeps: alice')).toBeInTheDocument();
 
@@ -202,6 +225,7 @@ describe('createAtomStore', () => {
       expect(arrNumRenderCount).toBe(5);
       expect(arrNumRenderCountWithOneHook).toBe(5);
       expect(arrNumRenderWithDepsCount).toBe(5);
+      expect(arrNumRenderWithDepsAndAtomCount).toBe(5);
       expect(getByText('arrNum: bob')).toBeInTheDocument();
       expect(getByText('arrNumWithDeps: bob')).toBeInTheDocument();
 
@@ -214,6 +238,7 @@ describe('createAtomStore', () => {
       expect(arrNumRenderCount).toBe(5);
       expect(arrNumRenderCountWithOneHook).toBe(5);
       expect(arrNumRenderWithDepsCount).toBe(5);
+      expect(arrNumRenderWithDepsAndAtomCount).toBe(5);
       expect(getByText('arrNum: bob')).toBeInTheDocument();
       expect(getByText('arrNumWithDeps: bob')).toBeInTheDocument();
 
@@ -226,6 +251,7 @@ describe('createAtomStore', () => {
       expect(arrNumRenderCount).toBe(5);
       expect(arrNumRenderCountWithOneHook).toBe(5);
       expect(arrNumRenderWithDepsCount).toBe(5);
+      expect(arrNumRenderWithDepsAndAtomCount).toBe(5);
       expect(getByText('arrNum: bob')).toBeInTheDocument();
       expect(getByText('arrNumWithDeps: bob')).toBeInTheDocument();
 
@@ -238,6 +264,7 @@ describe('createAtomStore', () => {
       expect(arrNumRenderCount).toBe(8);
       expect(arrNumRenderCountWithOneHook).toBe(8);
       expect(arrNumRenderWithDepsCount).toBe(8);
+      expect(arrNumRenderWithDepsAndAtomCount).toBe(8);
       expect(getByText('arrNum: ava')).toBeInTheDocument();
       expect(getByText('arrNumWithDeps: ava')).toBeInTheDocument();
     });
