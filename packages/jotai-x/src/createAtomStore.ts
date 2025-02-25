@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useMemo} from 'react';
 import { getDefaultStore, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { selectAtom, useHydrateAtoms } from 'jotai/utils';
 
@@ -473,6 +473,12 @@ const convertScopeShorthand = (
     ? { scope: optionsOrScope }
     : optionsOrScope;
 
+const useConvertScopeShorthand: typeof convertScopeShorthand = (optionsOrScope) => {
+  const convertedOptions = convertScopeShorthand(optionsOrScope);
+  // Works because all values are primitives
+  return useMemo(() => convertedOptions, Object.values(convertedOptions));
+};
+
 const identity = (x: any) => x;
 
 export interface CreateAtomStoreOptions<
@@ -755,87 +761,87 @@ Please wrap them with useCallback or configure the deps array correctly.`
   };
 
   const useStoreApi: UseStoreApi<T, E> = (options = {}) => {
-    const scopedOptions = convertScopeShorthand(options);
-    const store = useStore(scopedOptions);
+    const convertedOptions = useConvertScopeShorthand(options);
+    const store = useStore(convertedOptions);
 
-    return {
+    return useMemo(() => ({
       // store.use<Key>Value()
       ...(withStoreAndOptions(
         atomsOfUseValue,
         getUseValueIndex,
         store,
-        scopedOptions
+        convertedOptions
       ) as UseKeyValueApis<MyStoreAtoms>),
       // store.get<Key>()
       ...(withStoreAndOptions(
         atomsOfGet,
         getGetIndex,
         store,
-        scopedOptions
+        convertedOptions
       ) as GetKeyApis<MyStoreAtoms>),
       // store.useSet<Key>()
       ...(withStoreAndOptions(
         atomsOfUseSet,
         getUseSetIndex,
         store,
-        scopedOptions
+        convertedOptions
       ) as UseSetKeyApis<MyStoreAtoms>),
       // store.set<Key>(...args)
       ...(withStoreAndOptions(
         atomsOfSet,
         getSetIndex,
         store,
-        scopedOptions
+        convertedOptions
       ) as SetKeyApis<MyStoreAtoms>),
       // store.use<Key>State()
       ...(withStoreAndOptions(
         atomsOfUseState,
         getUseStateIndex,
         store,
-        scopedOptions
+        convertedOptions
       ) as UseKeyStateApis<MyStoreAtoms>),
       // store.subscribe<Key>(callback)
       ...(withStoreAndOptions(
         atomsOfSubscribe,
         getSubscribeIndex,
         store,
-        scopedOptions
+        convertedOptions
       ) as SubscribeKeyApis<MyStoreAtoms>),
       // store.useValue('key')
       useValue: withKeyAndStoreAndOptions(
         atomsOfUseValue,
         store,
-        scopedOptions
+        convertedOptions
       ) as UseParamKeyValueApi<MyStoreAtoms>,
       // store.get('key')
       get: withKeyAndStoreAndOptions(
         atomsOfGet,
         store,
-        scopedOptions
+        convertedOptions
       ) as GetParamKeyApi<MyStoreAtoms>,
       // store.useSet('key')
       useSet: withKeyAndStoreAndOptions(
         atomsOfUseSet,
         store,
-        scopedOptions
+        convertedOptions
       ) as UseSetParamKeyApi<MyStoreAtoms>,
       // store.set('key', ...args)
       set: withKeyAndStoreAndOptions(
         atomsOfSet,
         store,
-        scopedOptions
+        convertedOptions
       ) as SetParamKeyApi<MyStoreAtoms>,
       // store.useState('key')
       useState: withKeyAndStoreAndOptions(
         atomsOfUseState,
         store,
-        scopedOptions
+        convertedOptions
       ) as UseParamKeyStateApi<MyStoreAtoms>,
       // store.subscribe('key', callback)
       subscribe: withKeyAndStoreAndOptions(
         atomsOfSubscribe,
         store,
-        scopedOptions
+        convertedOptions
       ) as SubscribeParamKeyApi<MyStoreAtoms>,
       // store.useAtomValue(atomConfig)
       useAtomValue: ((atomConfig, selector, equalityFnOrDeps, deps) =>
@@ -843,30 +849,30 @@ Please wrap them with useCallback or configure the deps array correctly.`
         useAtomValueWithStore(
           atomConfig,
           store,
-          scopedOptions,
+          convertedOptions,
           selector,
           equalityFnOrDeps,
           deps
         )) as UseAtomParamValueApi,
       // store.getAtom(atomConfig)
       getAtom: (atomConfig) =>
-        getAtomWithStore(atomConfig, store, scopedOptions),
+        getAtomWithStore(atomConfig, store, convertedOptions),
       // store.useSetAtom(atomConfig)
       useSetAtom: (atomConfig) =>
         // eslint-disable-next-line react-compiler/react-compiler
-        useSetAtomWithStore(atomConfig, store, scopedOptions),
+        useSetAtomWithStore(atomConfig, store, convertedOptions),
       // store.setAtom(atomConfig, ...args)
       setAtom: (atomConfig) =>
-        setAtomWithStore(atomConfig, store, scopedOptions),
+        setAtomWithStore(atomConfig, store, convertedOptions),
       // store.useAtomState(atomConfig)
       useAtomState: (atomConfig) =>
         // eslint-disable-next-line react-compiler/react-compiler
-        useAtomStateWithStore(atomConfig, store, scopedOptions),
+        useAtomStateWithStore(atomConfig, store, convertedOptions),
       // store.subscribeAtom(atomConfig, callback)
       subscribeAtom: (atomConfig) =>
-        subscribeAtomWithStore(atomConfig, store, scopedOptions),
+        subscribeAtomWithStore(atomConfig, store, convertedOptions),
       store,
-    };
+    }), [store, convertedOptions]);
   };
 
   const useNameState = <K extends keyof StoreAtoms<T, E>>(

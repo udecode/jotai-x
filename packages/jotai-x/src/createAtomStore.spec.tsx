@@ -1102,6 +1102,14 @@ describe('createAtomStore', () => {
       expect(getByText('Change Callback new')).toBeInTheDocument();
       expect(getByText('useBecameFriends: true')).toBeInTheDocument();
     });
+
+    it('returns a stable store from useNameStore', () => {
+      const { result, rerender } = renderHook(useMyTestStoreStore);
+      const first = result.current;
+      rerender();
+      const second = result.current;
+      expect(first === second).toBeTruthy();
+    });
   });
 
   describe('scoped providers', () => {
