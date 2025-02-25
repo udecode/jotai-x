@@ -1,4 +1,4 @@
-import React, {useMemo} from 'react';
+import React, { useMemo } from 'react';
 import { getDefaultStore, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { selectAtom, useHydrateAtoms } from 'jotai/utils';
 
@@ -473,9 +473,12 @@ const convertScopeShorthand = (
     ? { scope: optionsOrScope }
     : optionsOrScope;
 
-const useConvertScopeShorthand: typeof convertScopeShorthand = (optionsOrScope) => {
+const useConvertScopeShorthand: typeof convertScopeShorthand = (
+  optionsOrScope
+) => {
   const convertedOptions = convertScopeShorthand(optionsOrScope);
   // Works because all values are primitives
+  // eslint-disable-next-line react-compiler/react-compiler
   return useMemo(() => convertedOptions, Object.values(convertedOptions));
 };
 
@@ -764,115 +767,118 @@ Please wrap them with useCallback or configure the deps array correctly.`
     const convertedOptions = useConvertScopeShorthand(options);
     const store = useStore(convertedOptions);
 
-    return useMemo(() => ({
-      // store.use<Key>Value()
-      ...(withStoreAndOptions(
-        atomsOfUseValue,
-        getUseValueIndex,
-        store,
-        convertedOptions
-      ) as UseKeyValueApis<MyStoreAtoms>),
-      // store.get<Key>()
-      ...(withStoreAndOptions(
-        atomsOfGet,
-        getGetIndex,
-        store,
-        convertedOptions
-      ) as GetKeyApis<MyStoreAtoms>),
-      // store.useSet<Key>()
-      ...(withStoreAndOptions(
-        atomsOfUseSet,
-        getUseSetIndex,
-        store,
-        convertedOptions
-      ) as UseSetKeyApis<MyStoreAtoms>),
-      // store.set<Key>(...args)
-      ...(withStoreAndOptions(
-        atomsOfSet,
-        getSetIndex,
-        store,
-        convertedOptions
-      ) as SetKeyApis<MyStoreAtoms>),
-      // store.use<Key>State()
-      ...(withStoreAndOptions(
-        atomsOfUseState,
-        getUseStateIndex,
-        store,
-        convertedOptions
-      ) as UseKeyStateApis<MyStoreAtoms>),
-      // store.subscribe<Key>(callback)
-      ...(withStoreAndOptions(
-        atomsOfSubscribe,
-        getSubscribeIndex,
-        store,
-        convertedOptions
-      ) as SubscribeKeyApis<MyStoreAtoms>),
-      // store.useValue('key')
-      useValue: withKeyAndStoreAndOptions(
-        atomsOfUseValue,
-        store,
-        convertedOptions
-      ) as UseParamKeyValueApi<MyStoreAtoms>,
-      // store.get('key')
-      get: withKeyAndStoreAndOptions(
-        atomsOfGet,
-        store,
-        convertedOptions
-      ) as GetParamKeyApi<MyStoreAtoms>,
-      // store.useSet('key')
-      useSet: withKeyAndStoreAndOptions(
-        atomsOfUseSet,
-        store,
-        convertedOptions
-      ) as UseSetParamKeyApi<MyStoreAtoms>,
-      // store.set('key', ...args)
-      set: withKeyAndStoreAndOptions(
-        atomsOfSet,
-        store,
-        convertedOptions
-      ) as SetParamKeyApi<MyStoreAtoms>,
-      // store.useState('key')
-      useState: withKeyAndStoreAndOptions(
-        atomsOfUseState,
-        store,
-        convertedOptions
-      ) as UseParamKeyStateApi<MyStoreAtoms>,
-      // store.subscribe('key', callback)
-      subscribe: withKeyAndStoreAndOptions(
-        atomsOfSubscribe,
-        store,
-        convertedOptions
-      ) as SubscribeParamKeyApi<MyStoreAtoms>,
-      // store.useAtomValue(atomConfig)
-      useAtomValue: ((atomConfig, selector, equalityFnOrDeps, deps) =>
-        // eslint-disable-next-line react-compiler/react-compiler
-        useAtomValueWithStore(
-          atomConfig,
+    return useMemo(
+      () => ({
+        // store.use<Key>Value()
+        ...(withStoreAndOptions(
+          atomsOfUseValue,
+          getUseValueIndex,
           store,
-          convertedOptions,
-          selector,
-          equalityFnOrDeps,
-          deps
-        )) as UseAtomParamValueApi,
-      // store.getAtom(atomConfig)
-      getAtom: (atomConfig) =>
-        getAtomWithStore(atomConfig, store, convertedOptions),
-      // store.useSetAtom(atomConfig)
-      useSetAtom: (atomConfig) =>
-        // eslint-disable-next-line react-compiler/react-compiler
-        useSetAtomWithStore(atomConfig, store, convertedOptions),
-      // store.setAtom(atomConfig, ...args)
-      setAtom: (atomConfig) =>
-        setAtomWithStore(atomConfig, store, convertedOptions),
-      // store.useAtomState(atomConfig)
-      useAtomState: (atomConfig) =>
-        // eslint-disable-next-line react-compiler/react-compiler
-        useAtomStateWithStore(atomConfig, store, convertedOptions),
-      // store.subscribeAtom(atomConfig, callback)
-      subscribeAtom: (atomConfig) =>
-        subscribeAtomWithStore(atomConfig, store, convertedOptions),
-      store,
-    }), [store, convertedOptions]);
+          convertedOptions
+        ) as UseKeyValueApis<MyStoreAtoms>),
+        // store.get<Key>()
+        ...(withStoreAndOptions(
+          atomsOfGet,
+          getGetIndex,
+          store,
+          convertedOptions
+        ) as GetKeyApis<MyStoreAtoms>),
+        // store.useSet<Key>()
+        ...(withStoreAndOptions(
+          atomsOfUseSet,
+          getUseSetIndex,
+          store,
+          convertedOptions
+        ) as UseSetKeyApis<MyStoreAtoms>),
+        // store.set<Key>(...args)
+        ...(withStoreAndOptions(
+          atomsOfSet,
+          getSetIndex,
+          store,
+          convertedOptions
+        ) as SetKeyApis<MyStoreAtoms>),
+        // store.use<Key>State()
+        ...(withStoreAndOptions(
+          atomsOfUseState,
+          getUseStateIndex,
+          store,
+          convertedOptions
+        ) as UseKeyStateApis<MyStoreAtoms>),
+        // store.subscribe<Key>(callback)
+        ...(withStoreAndOptions(
+          atomsOfSubscribe,
+          getSubscribeIndex,
+          store,
+          convertedOptions
+        ) as SubscribeKeyApis<MyStoreAtoms>),
+        // store.useValue('key')
+        useValue: withKeyAndStoreAndOptions(
+          atomsOfUseValue,
+          store,
+          convertedOptions
+        ) as UseParamKeyValueApi<MyStoreAtoms>,
+        // store.get('key')
+        get: withKeyAndStoreAndOptions(
+          atomsOfGet,
+          store,
+          convertedOptions
+        ) as GetParamKeyApi<MyStoreAtoms>,
+        // store.useSet('key')
+        useSet: withKeyAndStoreAndOptions(
+          atomsOfUseSet,
+          store,
+          convertedOptions
+        ) as UseSetParamKeyApi<MyStoreAtoms>,
+        // store.set('key', ...args)
+        set: withKeyAndStoreAndOptions(
+          atomsOfSet,
+          store,
+          convertedOptions
+        ) as SetParamKeyApi<MyStoreAtoms>,
+        // store.useState('key')
+        useState: withKeyAndStoreAndOptions(
+          atomsOfUseState,
+          store,
+          convertedOptions
+        ) as UseParamKeyStateApi<MyStoreAtoms>,
+        // store.subscribe('key', callback)
+        subscribe: withKeyAndStoreAndOptions(
+          atomsOfSubscribe,
+          store,
+          convertedOptions
+        ) as SubscribeParamKeyApi<MyStoreAtoms>,
+        // store.useAtomValue(atomConfig)
+        useAtomValue: ((atomConfig, selector, equalityFnOrDeps, deps) =>
+          // eslint-disable-next-line react-compiler/react-compiler
+          useAtomValueWithStore(
+            atomConfig,
+            store,
+            convertedOptions,
+            selector,
+            equalityFnOrDeps,
+            deps
+          )) as UseAtomParamValueApi,
+        // store.getAtom(atomConfig)
+        getAtom: (atomConfig) =>
+          getAtomWithStore(atomConfig, store, convertedOptions),
+        // store.useSetAtom(atomConfig)
+        useSetAtom: (atomConfig) =>
+          // eslint-disable-next-line react-compiler/react-compiler
+          useSetAtomWithStore(atomConfig, store, convertedOptions),
+        // store.setAtom(atomConfig, ...args)
+        setAtom: (atomConfig) =>
+          setAtomWithStore(atomConfig, store, convertedOptions),
+        // store.useAtomState(atomConfig)
+        useAtomState: (atomConfig) =>
+          // eslint-disable-next-line react-compiler/react-compiler
+          useAtomStateWithStore(atomConfig, store, convertedOptions),
+        // store.subscribeAtom(atomConfig, callback)
+        subscribeAtom: (atomConfig) =>
+          subscribeAtomWithStore(atomConfig, store, convertedOptions),
+        store,
+      }),
+      [store, convertedOptions]
+    );
   };
 
   const useNameState = <K extends keyof StoreAtoms<T, E>>(
