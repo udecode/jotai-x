@@ -1,5 +1,11 @@
 # jotai-x
 
+## 2.3.1
+
+### Patch Changes
+
+- [#30](https://github.com/udecode/jotai-x/pull/30) by [@12joan](https://github.com/12joan) – Fix: Return value of `use<Name>Store` is not memorized
+
 ## 2.3.0
 
 ### Minor Changes
