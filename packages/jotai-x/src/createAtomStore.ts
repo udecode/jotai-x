@@ -595,7 +595,7 @@ export const createAtomStore = <
     deps
   ) => {
     // If selector/equalityFn are not memoized, infinite loop will occur.
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env.NODE_ENV !== 'production' && infiniteRenderDetectionLimit) {
       renderCount += 1;
       if (renderCount > infiniteRenderDetectionLimit) {
         throw new Error(
