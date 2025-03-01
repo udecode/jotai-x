@@ -1,5 +1,11 @@
 # jotai-x
 
+## 2.3.2
+
+### Patch Changes
+
+- [`431e843`](https://github.com/udecode/jotai-x/commit/431e8435e18d8ef84af34a95bb3802b3625a3707) by [@zbeyens](https://github.com/zbeyens) – Fix: remove default infiniteRenderDetectionLimit
+
 ## 2.3.1
 
 ### Patch Changes
