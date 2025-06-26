@@ -672,28 +672,29 @@ Please wrap them with useCallback or configure the deps array correctly.`
   }
 
   const defineUseStoreApiMethod = (
-    withKeyMethodName: string,
-    withConfigMethodName: string,
-    fn: (
+    methodNameWithKey: string,
+    methodNameWithAtomConfig: string,
+    fnWithKey: (
       atomConfig: any,
       store: JotaiStore | undefined,
       options: UseAtomOptions,
       ...args: any[]
-    ) => any
+    ) => any,
+    fnWithAtomConfig = fnWithKey
   ) => {
-    UseStoreApiFactory.prototype[withKeyMethodName] = function (
+    UseStoreApiFactory.prototype[methodNameWithKey] = function (
       key: string,
       ...args: any[]
     ) {
       const atomConfig = atoms[key] as any;
-      return fn(atomConfig, this.store, this.options, ...args);
+      return fnWithKey(atomConfig, this.store, this.options, ...args);
     };
 
-    UseStoreApiFactory.prototype[withConfigMethodName] = function (
+    UseStoreApiFactory.prototype[methodNameWithAtomConfig] = function (
       atomConfig: any,
       ...args: any[]
     ) {
-      return fn(atomConfig, this.store, this.options, ...args);
+      return fnWithAtomConfig(atomConfig, this.store, this.options, ...args);
     };
   };
 
@@ -704,14 +705,16 @@ Please wrap them with useCallback or configure the deps array correctly.`
     'set',
     'setAtom',
     (atomConfig, store, options, ...args) =>
-      setAtomWithStore(atomConfig, store, options)(...args)
+      setAtomWithStore(atomConfig, store, options)(...args),
+    setAtomWithStore
   );
   defineUseStoreApiMethod('useState', 'useAtomState', useAtomStateWithStore);
   defineUseStoreApiMethod(
     'subscribe',
     'subscribeAtom',
     (atomConfig, store, options, callback) =>
-      subscribeAtomWithStore(atomConfig, store, options)(callback)
+      subscribeAtomWithStore(atomConfig, store, options)(callback),
+    subscribeAtomWithStore
   );
 
   const Provider = createAtomProvider(name, writableAtomsWithoutExtend as any, {
