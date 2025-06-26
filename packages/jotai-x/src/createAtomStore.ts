@@ -19,36 +19,6 @@ export type UseAtomOptions = {
 
 type UseAtomOptionsOrScope = UseAtomOptions | string;
 
-type UseValueRecord<O> = {
-  [K in keyof O]: O[K] extends Atom<infer V> ? () => V : never;
-};
-
-type GetRecord<O> = UseValueRecord<O>;
-
-type UseSetRecord<O> = {
-  [K in keyof O]: O[K] extends WritableAtom<infer _V, infer A, infer R>
-    ? () => (...args: A) => R
-    : never;
-};
-
-type SetRecord<O> = {
-  [K in keyof O]: O[K] extends WritableAtom<infer _V, infer A, infer R>
-    ? (...args: A) => R
-    : never;
-};
-
-type UseStateRecord<O> = {
-  [K in keyof O]: O[K] extends WritableAtom<infer V, infer A, infer R>
-    ? () => [V, (...args: A) => R]
-    : never;
-};
-
-type SubscribeRecord<O> = {
-  [K in keyof O]: O[K] extends Atom<infer V>
-    ? (callback: (newValue: V) => void) => () => void
-    : never;
-};
-
 type StoreAtomsWithoutExtend<T> = {
   [K in keyof T]: T[K] extends Atom<any> ? T[K] : SimpleWritableAtom<T[K]>;
 };
@@ -60,12 +30,6 @@ type ValueTypesForAtoms<T> = {
 type StoreInitialValues<T> = ValueTypesForAtoms<StoreAtomsWithoutExtend<T>>;
 
 type StoreAtoms<T, E> = StoreAtomsWithoutExtend<T> & E;
-
-type FilterWritableAtoms<T> = {
-  [K in keyof T]-?: T[K] extends WritableAtom<any, any, any> ? T[K] : never;
-};
-
-type WritableStoreAtoms<T, E> = FilterWritableAtoms<StoreAtoms<T, E>>;
 
 export type SimpleWritableAtom<T> = WritableAtom<T, [T], void>;
 
@@ -423,12 +387,6 @@ export type UseStoreApi<T, E> = (
 
 const capitalizeFirstLetter = (str = '') =>
   str.length > 0 ? str[0].toUpperCase() + str.slice(1) : '';
-const getProviderIndex = (name = '') =>
-  `${capitalizeFirstLetter(name)}Provider`;
-const getStoreIndex = (name = '') =>
-  name.length > 0 ? `${name}Store` : 'store';
-const getUseStoreIndex = (name = '') =>
-  `use${capitalizeFirstLetter(name)}Store`;
 
 const getUseValueIndex = (key = '') => `use${capitalizeFirstLetter(key)}Value`;
 const getGetIndex = (key = '') => `get${capitalizeFirstLetter(key)}`;
@@ -443,28 +401,6 @@ const isAtom = (possibleAtom: unknown): boolean =>
   typeof possibleAtom === 'object' &&
   'read' in possibleAtom &&
   typeof possibleAtom.read === 'function';
-
-const withStoreAndOptions = <T extends object>(
-  fnRecord: T,
-  getIndex: (name?: string) => string,
-  store: JotaiStore | undefined,
-  options: UseAtomOptions
-): any =>
-  Object.fromEntries(
-    Object.entries(fnRecord).map(([key, fn]) => [
-      getIndex(key),
-      (...args: any[]) => (fn as any)(store, options, ...args),
-    ])
-  );
-
-const withKeyAndStoreAndOptions =
-  <T extends object>(
-    fnRecord: T,
-    store: JotaiStore | undefined,
-    options: UseAtomOptions
-  ): any =>
-  (key: keyof T, ...args: any[]) =>
-    (fnRecord[key] as any)(store, options, ...args);
 
 const convertScopeShorthand = (
   optionsOrScope: UseAtomOptionsOrScope = {}
@@ -524,55 +460,42 @@ export const createAtomStore = <
     suppressWarnings,
   }: CreateAtomStoreOptions<T, E, N>
 ): AtomStoreApi<T, E, N> => {
-  type MyStoreAtoms = StoreAtoms<T, E>;
-  type MyWritableStoreAtoms = WritableStoreAtoms<T, E>;
-  type MyStoreAtomsWithoutExtend = StoreAtomsWithoutExtend<T>;
-  type MyWritableStoreAtomsWithoutExtend =
-    FilterWritableAtoms<MyStoreAtomsWithoutExtend>;
-  type MyStoreInitialValues = StoreInitialValues<T>;
-
-  const providerIndex = getProviderIndex(name) as NameProvider<N>;
-  const useStoreIndex = getUseStoreIndex(name) as UseNameStore<N>;
-  const storeIndex = getStoreIndex(name) as NameStore<N>;
-
-  const atomsWithoutExtend = {} as MyStoreAtomsWithoutExtend;
-  const writableAtomsWithoutExtend = {} as MyWritableStoreAtomsWithoutExtend;
-  const atomIsWritable = {} as Record<keyof MyStoreAtoms, boolean>;
+  const atomsWithoutExtend: Record<string, Atom<unknown>> = {};
+  const writableAtomsWithoutExtend: Record<string, Atom<unknown>> = {};
+  const atomIsWritable: Record<string, boolean> = {};
 
   for (const [key, atomOrValue] of Object.entries(initialState)) {
     const atomConfig: Atom<unknown> = isAtom(atomOrValue)
       ? atomOrValue
       : atomWithFn(atomOrValue);
-    atomsWithoutExtend[key as keyof MyStoreAtomsWithoutExtend] =
-      atomConfig as any;
+
+    atomsWithoutExtend[key] = atomConfig;
 
     const writable = 'write' in atomConfig;
-    atomIsWritable[key as keyof MyStoreAtoms] = writable;
+    atomIsWritable[key] = writable;
 
     if (writable) {
-      writableAtomsWithoutExtend[
-        key as keyof MyWritableStoreAtomsWithoutExtend
-      ] = atomConfig as any;
+      writableAtomsWithoutExtend[key] = atomConfig;
     }
   }
 
-  const atoms = { ...atomsWithoutExtend } as MyStoreAtoms;
+  const atoms: Record<string, Atom<unknown>> = { ...atomsWithoutExtend };
 
   if (extend) {
-    const extendedAtoms = extend(atomsWithoutExtend);
+    const extendedAtoms = extend(atomsWithoutExtend as any);
 
     for (const [key, atomConfig] of Object.entries(extendedAtoms)) {
-      atoms[key as keyof MyStoreAtoms] = atomConfig;
-      atomIsWritable[key as keyof MyStoreAtoms] = 'write' in atomConfig;
+      atoms[key] = atomConfig;
+      atomIsWritable[key] = 'write' in atomConfig;
     }
   }
 
-  const atomsOfUseValue = {} as UseValueRecord<MyStoreAtoms>;
-  const atomsOfGet = {} as GetRecord<MyStoreAtoms>;
-  const atomsOfUseSet = {} as UseSetRecord<MyWritableStoreAtoms>;
-  const atomsOfSet = {} as SetRecord<MyWritableStoreAtoms>;
-  const atomsOfUseState = {} as UseStateRecord<MyWritableStoreAtoms>;
-  const atomsOfSubscribe = {} as SubscribeRecord<MyStoreAtoms>;
+  const atomsOfUseValue: Record<string, unknown> = {};
+  const atomsOfGet: Record<string, unknown> = {};
+  const atomsOfUseSet: Record<string, unknown> = {};
+  const atomsOfSet: Record<string, unknown> = {};
+  const atomsOfUseState: Record<string, unknown> = {};
+  const atomsOfSubscribe: Record<string, unknown> = {};
 
   const useStore = (optionsOrScope: UseAtomOptionsOrScope = {}) => {
     const {
@@ -590,7 +513,7 @@ export const createAtomStore = <
     atomConfig,
     store,
     optionsOrScope,
-    selector,
+    selector = identity,
     equalityFnOrDeps,
     deps
   ) => {
@@ -614,7 +537,6 @@ Please wrap them with useCallback or configure the deps array correctly.`
     }
 
     const options = convertScopeShorthand(optionsOrScope);
-    selector ??= identity;
     const equalityFn =
       typeof equalityFnOrDeps === 'function' ? equalityFnOrDeps : undefined;
     deps = (typeof equalityFnOrDeps === 'function'
@@ -623,6 +545,7 @@ Please wrap them with useCallback or configure the deps array correctly.`
 
     const [memoizedSelector, memoizedEqualityFn] = React.useMemo(
       () => [selector, equalityFn],
+      // eslint-disable-next-line react-compiler/react-compiler
       deps
     );
 
@@ -685,10 +608,10 @@ Please wrap them with useCallback or configure the deps array correctly.`
   };
 
   for (const key of Object.keys(atoms)) {
-    const atomConfig = atoms[key as keyof MyStoreAtoms];
-    const isWritable: boolean = atomIsWritable[key as keyof MyStoreAtoms];
+    const atomConfig = atoms[key];
+    const isWritable = atomIsWritable[key];
 
-    (atomsOfUseValue as any)[key] = (
+    atomsOfUseValue[key] = (
       store: JotaiStore | undefined,
       optionsOrScope: UseAtomOptionsOrScope = {},
       selector?: (v: any, prevSelectorOutput?: any) => any,
@@ -706,19 +629,19 @@ Please wrap them with useCallback or configure the deps array correctly.`
         deps
       );
 
-    (atomsOfGet as any)[key] = (
+    atomsOfGet[key] = (
       store: JotaiStore | undefined,
       optionsOrScope: UseAtomOptionsOrScope = {}
     ) => getAtomWithStore(atomConfig, store, optionsOrScope);
 
-    (atomsOfSubscribe as any)[key] = (
+    atomsOfSubscribe[key] = (
       store: JotaiStore | undefined,
       optionsOrScope: UseAtomOptionsOrScope = {},
       callback: (newValue: any) => void
     ) => subscribeAtomWithStore(atomConfig, store, optionsOrScope)(callback);
 
     if (isWritable) {
-      (atomsOfUseSet as any)[key] = (
+      atomsOfUseSet[key] = (
         store: JotaiStore | undefined,
         optionsOrScope: UseAtomOptionsOrScope = {}
       ) =>
@@ -728,7 +651,7 @@ Please wrap them with useCallback or configure the deps array correctly.`
           optionsOrScope
         );
 
-      (atomsOfSet as any)[key] = (
+      atomsOfSet[key] = (
         store: JotaiStore | undefined,
         optionsOrScope: UseAtomOptionsOrScope = {},
         ...args: any[]
@@ -739,7 +662,7 @@ Please wrap them with useCallback or configure the deps array correctly.`
           optionsOrScope
         )(...args);
 
-      (atomsOfUseState as any)[key] = (
+      atomsOfUseState[key] = (
         store: JotaiStore | undefined,
         optionsOrScope: UseAtomOptionsOrScope = {}
       ) =>
@@ -751,132 +674,118 @@ Please wrap them with useCallback or configure the deps array correctly.`
     }
   }
 
-  const Provider: React.FC<ProviderProps<MyStoreInitialValues>> =
-    createAtomProvider<MyStoreInitialValues, N>(
-      name,
-      writableAtomsWithoutExtend,
-      { effect }
-    );
+  const Provider = createAtomProvider(name, writableAtomsWithoutExtend as any, {
+    effect,
+  });
 
   const storeApi: StoreApi<T, E, N> = {
-    atom: atoms,
+    atom: atoms as any,
     name,
   };
+
+  /**
+   * Constructor to generate the object returned by `useStoreApi`. Using
+   * prototypes is much faster than constructing a new object every time the
+   * hook is called.
+   */
+  // eslint-disable-next-line unicorn/consistent-function-scoping
+  function UseStoreApiFactory(
+    this: {
+      options: UseAtomOptions;
+      store: JotaiStore | undefined;
+    },
+    options: UseAtomOptions,
+    store: JotaiStore | undefined
+  ) {
+    this.options = options;
+    this.store = store;
+  }
+
+  {
+    const defineMethodPerAtom = (
+      fnRecord: object,
+      getIndex: (key: string) => string
+    ) => {
+      for (const [key, fn] of Object.entries(fnRecord)) {
+        const index = getIndex(key);
+        UseStoreApiFactory.prototype[index] = function (...args: any[]) {
+          return fn(this.store, this.options, ...args);
+        };
+      }
+    };
+
+    const defineMethodWithAtomName = (methodName: string, fnRecord: any) => {
+      UseStoreApiFactory.prototype[methodName] = function (
+        key: string,
+        ...args: any[]
+      ) {
+        return fnRecord[key](this.store, this.options, ...args);
+      };
+    };
+
+    const defineMethodWithAtomConfig = (
+      methodName: string,
+      fn: (
+        atomConfig: any,
+        store: JotaiStore | undefined,
+        options: UseAtomOptions,
+        ...args: any[]
+      ) => any
+    ) => {
+      UseStoreApiFactory.prototype[methodName] = function (
+        atomConfig: any,
+        ...args: any[]
+      ) {
+        return fn(atomConfig, this.store, this.options, ...args);
+      };
+    };
+
+    // store.use<Key>Value()
+    defineMethodPerAtom(atomsOfUseValue, getUseValueIndex);
+    // store.get<Key>()
+    defineMethodPerAtom(atomsOfGet, getGetIndex);
+    // store.useSet<Key>()
+    defineMethodPerAtom(atomsOfUseSet, getUseSetIndex);
+    // store.set<Key>(...args)
+    defineMethodPerAtom(atomsOfSet, getSetIndex);
+    // store.use<Key>State()
+    defineMethodPerAtom(atomsOfUseState, getUseStateIndex);
+    // store.subscribe<Key>(callback)
+    defineMethodPerAtom(atomsOfSubscribe, getSubscribeIndex);
+
+    // store.useValue('key')
+    defineMethodWithAtomName('useValue', atomsOfUseValue);
+    // store.get('key')
+    defineMethodWithAtomName('get', atomsOfGet);
+    // store.useSet('key')
+    defineMethodWithAtomName('useSet', atomsOfUseSet);
+    // store.set('key', ...args)
+    defineMethodWithAtomName('set', atomsOfSet);
+    // store.useState('key')
+    defineMethodWithAtomName('useState', atomsOfUseState);
+    // store.subscribe('key', callback)
+    defineMethodWithAtomName('subscribe', atomsOfSubscribe);
+
+    // store.useAtomValue(atomConfig)
+    defineMethodWithAtomConfig('useAtomValue', useAtomValueWithStore);
+    // store.getAtom(atomConfig)
+    defineMethodWithAtomConfig('getAtom', getAtomWithStore);
+    // store.useSetAtom(atomConfig)
+    defineMethodWithAtomConfig('useSetAtom', useSetAtomWithStore);
+    // store.setAtom(atomConfig, ...args)
+    defineMethodWithAtomConfig('setAtom', setAtomWithStore);
+    // store.useAtomState(atomConfig)
+    defineMethodWithAtomConfig('useAtomState', useAtomStateWithStore);
+    // store.subscribeAtom(atomConfig, callback)
+    defineMethodWithAtomConfig('subscribeAtom', subscribeAtomWithStore);
+  }
 
   const useStoreApi: UseStoreApi<T, E> = (options = {}) => {
     const convertedOptions = useConvertScopeShorthand(options);
     const store = useStore(convertedOptions);
 
     return useMemo(
-      () => ({
-        // store.use<Key>Value()
-        ...(withStoreAndOptions(
-          atomsOfUseValue,
-          getUseValueIndex,
-          store,
-          convertedOptions
-        ) as UseKeyValueApis<MyStoreAtoms>),
-        // store.get<Key>()
-        ...(withStoreAndOptions(
-          atomsOfGet,
-          getGetIndex,
-          store,
-          convertedOptions
-        ) as GetKeyApis<MyStoreAtoms>),
-        // store.useSet<Key>()
-        ...(withStoreAndOptions(
-          atomsOfUseSet,
-          getUseSetIndex,
-          store,
-          convertedOptions
-        ) as UseSetKeyApis<MyStoreAtoms>),
-        // store.set<Key>(...args)
-        ...(withStoreAndOptions(
-          atomsOfSet,
-          getSetIndex,
-          store,
-          convertedOptions
-        ) as SetKeyApis<MyStoreAtoms>),
-        // store.use<Key>State()
-        ...(withStoreAndOptions(
-          atomsOfUseState,
-          getUseStateIndex,
-          store,
-          convertedOptions
-        ) as UseKeyStateApis<MyStoreAtoms>),
-        // store.subscribe<Key>(callback)
-        ...(withStoreAndOptions(
-          atomsOfSubscribe,
-          getSubscribeIndex,
-          store,
-          convertedOptions
-        ) as SubscribeKeyApis<MyStoreAtoms>),
-        // store.useValue('key')
-        useValue: withKeyAndStoreAndOptions(
-          atomsOfUseValue,
-          store,
-          convertedOptions
-        ) as UseParamKeyValueApi<MyStoreAtoms>,
-        // store.get('key')
-        get: withKeyAndStoreAndOptions(
-          atomsOfGet,
-          store,
-          convertedOptions
-        ) as GetParamKeyApi<MyStoreAtoms>,
-        // store.useSet('key')
-        useSet: withKeyAndStoreAndOptions(
-          atomsOfUseSet,
-          store,
-          convertedOptions
-        ) as UseSetParamKeyApi<MyStoreAtoms>,
-        // store.set('key', ...args)
-        set: withKeyAndStoreAndOptions(
-          atomsOfSet,
-          store,
-          convertedOptions
-        ) as SetParamKeyApi<MyStoreAtoms>,
-        // store.useState('key')
-        useState: withKeyAndStoreAndOptions(
-          atomsOfUseState,
-          store,
-          convertedOptions
-        ) as UseParamKeyStateApi<MyStoreAtoms>,
-        // store.subscribe('key', callback)
-        subscribe: withKeyAndStoreAndOptions(
-          atomsOfSubscribe,
-          store,
-          convertedOptions
-        ) as SubscribeParamKeyApi<MyStoreAtoms>,
-        // store.useAtomValue(atomConfig)
-        useAtomValue: ((atomConfig, selector, equalityFnOrDeps, deps) =>
-          // eslint-disable-next-line react-compiler/react-compiler
-          useAtomValueWithStore(
-            atomConfig,
-            store,
-            convertedOptions,
-            selector,
-            equalityFnOrDeps,
-            deps
-          )) as UseAtomParamValueApi,
-        // store.getAtom(atomConfig)
-        getAtom: (atomConfig) =>
-          getAtomWithStore(atomConfig, store, convertedOptions),
-        // store.useSetAtom(atomConfig)
-        useSetAtom: (atomConfig) =>
-          // eslint-disable-next-line react-compiler/react-compiler
-          useSetAtomWithStore(atomConfig, store, convertedOptions),
-        // store.setAtom(atomConfig, ...args)
-        setAtom: (atomConfig) =>
-          setAtomWithStore(atomConfig, store, convertedOptions),
-        // store.useAtomState(atomConfig)
-        useAtomState: (atomConfig) =>
-          // eslint-disable-next-line react-compiler/react-compiler
-          useAtomStateWithStore(atomConfig, store, convertedOptions),
-        // store.subscribeAtom(atomConfig, callback)
-        subscribeAtom: (atomConfig) =>
-          subscribeAtomWithStore(atomConfig, store, convertedOptions),
-        store,
-      }),
+      () => new (UseStoreApiFactory as any)(convertedOptions, store),
       [store, convertedOptions]
     );
   };
@@ -886,7 +795,7 @@ Please wrap them with useCallback or configure the deps array correctly.`
     options?: UseAtomOptionsOrScope
   ) => {
     const store = useStore(options) ?? getDefaultStore();
-    return useAtomStateWithStore(atoms[key] as any, store, options);
+    return useAtomStateWithStore(atoms[key as string] as any, store, options);
   };
 
   const useNameValue = <
@@ -906,7 +815,7 @@ Please wrap them with useCallback or configure the deps array correctly.`
   ) => {
     const store = useStore(options) ?? getDefaultStore();
     return useAtomValueWithStore(
-      atoms[key],
+      atoms[key as string],
       store,
       options,
       selector as any,
@@ -920,16 +829,19 @@ Please wrap them with useCallback or configure the deps array correctly.`
     options?: UseAtomOptionsOrScope
   ) => {
     const store = useStore(options) ?? getDefaultStore();
-    return useSetAtomWithStore(atoms[key] as any, store, options);
+    return useSetAtomWithStore(atoms[key as string] as any, store, options);
   };
 
+  const capitalizedName = capitalizeFirstLetter(name);
+  const storeApiIndex = name.length === 0 ? 'store' : `${name}Store`;
+
   return {
-    [providerIndex]: Provider,
-    [useStoreIndex]: useStoreApi,
-    [storeIndex]: storeApi,
-    [`use${capitalizeFirstLetter(name)}State`]: useNameState,
-    [`use${capitalizeFirstLetter(name)}Value`]: useNameValue,
-    [`use${capitalizeFirstLetter(name)}Set`]: useNameSet,
+    [`${capitalizedName}Provider`]: Provider,
+    [storeApiIndex]: storeApi,
+    [`use${capitalizedName}Store`]: useStoreApi,
+    [`use${capitalizedName}State`]: useNameState,
+    [`use${capitalizedName}Value`]: useNameValue,
+    [`use${capitalizedName}Set`]: useNameSet,
     name,
   } as any;
 };
