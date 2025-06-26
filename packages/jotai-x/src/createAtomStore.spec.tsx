@@ -1110,6 +1110,37 @@ describe('createAtomStore', () => {
       const second = result.current;
       expect(first === second).toBeTruthy();
     });
+
+    it('getMyTestStoreStore returns a store without hooks', () => {
+      const { getMyTestStoreStore } = createAtomStore(initialTestStoreValue, {
+        name: 'myTestStore' as const,
+      });
+
+      // Should be able to call getMyTestStoreStore outside of React
+      const store = getMyTestStoreStore();
+
+      // Should have all the same methods as useMyTestStoreStore
+      expect(typeof store.getName).toBe('function');
+      expect(typeof store.setName).toBe('function');
+      expect(typeof store.getAge).toBe('function');
+      expect(typeof store.setAge).toBe('function');
+      expect(typeof store.get).toBe('function');
+      expect(typeof store.set).toBe('function');
+      expect(typeof store.subscribe).toBe('function');
+      expect(typeof store.getAtom).toBe('function');
+      expect(typeof store.setAtom).toBe('function');
+      expect(typeof store.subscribeAtom).toBe('function');
+
+      // Should be able to get and set values
+      expect(store.getName()).toBe(INITIAL_NAME);
+      expect(store.getAge()).toBe(INITIAL_AGE);
+
+      store.setName('New Name');
+      expect(store.getName()).toBe('New Name');
+
+      store.set('age', 100);
+      expect(store.get('age')).toBe(100);
+    });
   });
 
   describe('scoped providers', () => {

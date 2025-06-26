@@ -179,6 +179,9 @@ export type GetKeyApis<O> = {
     : never;
 };
 
+// get<Name>Store(options?)
+export type GetNameStore<N extends string = ''> = `get${Capitalize<N>}Store`;
+
 // store.useSet<Key>()
 export type UseSetKeyApis<O> = {
   [K in keyof O as UseSetKey<K & string>]: O[K] extends WritableAtom<
@@ -404,6 +407,10 @@ export type AtomStoreApi<
 } & {
   [key in keyof Record<UseNameStore<N>, object>]: UseStoreApi<T, E>;
 } & {
+  [key in keyof Record<GetNameStore<N>, object>]: (
+    options?: UseAtomOptionsOrScope
+  ) => ReturnOfUseStoreApi<T, E>;
+} & {
   [key in keyof Record<`use${Capitalize<N>}State`, object>]: UseKeyStateUtil<
     T,
     E
@@ -429,6 +436,8 @@ const getStoreIndex = (name = '') =>
   name.length > 0 ? `${name}Store` : 'store';
 const getUseStoreIndex = (name = '') =>
   `use${capitalizeFirstLetter(name)}Store`;
+const getGetStoreIndex = (name = '') =>
+  `get${capitalizeFirstLetter(name)}Store`;
 
 const getUseValueIndex = (key = '') => `use${capitalizeFirstLetter(key)}Value`;
 const getGetIndex = (key = '') => `get${capitalizeFirstLetter(key)}`;
@@ -923,9 +932,123 @@ Please wrap them with useCallback or configure the deps array correctly.`
     return useSetAtomWithStore(atoms[key] as any, store, options);
   };
 
+  const getNameStore = (options: UseAtomOptionsOrScope = {}) => {
+    const convertedOptions = convertScopeShorthand(options);
+    const { store } = convertedOptions;
+    const targetStore = store ?? getDefaultStore();
+
+    return {
+      // store.use<Key>Value()
+      ...(withStoreAndOptions(
+        atomsOfUseValue,
+        getUseValueIndex,
+        targetStore,
+        convertedOptions
+      ) as UseKeyValueApis<MyStoreAtoms>),
+      // store.get<Key>()
+      ...(withStoreAndOptions(
+        atomsOfGet,
+        getGetIndex,
+        targetStore,
+        convertedOptions
+      ) as GetKeyApis<MyStoreAtoms>),
+      // store.useSet<Key>()
+      ...(withStoreAndOptions(
+        atomsOfUseSet,
+        getUseSetIndex,
+        targetStore,
+        convertedOptions
+      ) as UseSetKeyApis<MyStoreAtoms>),
+      // store.set<Key>(...args)
+      ...(withStoreAndOptions(
+        atomsOfSet,
+        getSetIndex,
+        targetStore,
+        convertedOptions
+      ) as SetKeyApis<MyStoreAtoms>),
+      // store.use<Key>State()
+      ...(withStoreAndOptions(
+        atomsOfUseState,
+        getUseStateIndex,
+        targetStore,
+        convertedOptions
+      ) as UseKeyStateApis<MyStoreAtoms>),
+      // store.subscribe<Key>(callback)
+      ...(withStoreAndOptions(
+        atomsOfSubscribe,
+        getSubscribeIndex,
+        targetStore,
+        convertedOptions
+      ) as SubscribeKeyApis<MyStoreAtoms>),
+      // store.useValue('key')
+      useValue: withKeyAndStoreAndOptions(
+        atomsOfUseValue,
+        targetStore,
+        convertedOptions
+      ) as UseParamKeyValueApi<MyStoreAtoms>,
+      // store.get('key')
+      get: withKeyAndStoreAndOptions(
+        atomsOfGet,
+        targetStore,
+        convertedOptions
+      ) as GetParamKeyApi<MyStoreAtoms>,
+      // store.useSet('key')
+      useSet: withKeyAndStoreAndOptions(
+        atomsOfUseSet,
+        targetStore,
+        convertedOptions
+      ) as UseSetParamKeyApi<MyStoreAtoms>,
+      // store.set('key', ...args)
+      set: withKeyAndStoreAndOptions(
+        atomsOfSet,
+        targetStore,
+        convertedOptions
+      ) as SetParamKeyApi<MyStoreAtoms>,
+      // store.useState('key')
+      useState: withKeyAndStoreAndOptions(
+        atomsOfUseState,
+        targetStore,
+        convertedOptions
+      ) as UseParamKeyStateApi<MyStoreAtoms>,
+      // store.subscribe('key', callback)
+      subscribe: withKeyAndStoreAndOptions(
+        atomsOfSubscribe,
+        targetStore,
+        convertedOptions
+      ) as SubscribeParamKeyApi<MyStoreAtoms>,
+      // store.useAtomValue(atomConfig)
+      useAtomValue: ((atomConfig, selector, equalityFnOrDeps, deps) =>
+        useAtomValueWithStore(
+          atomConfig,
+          targetStore,
+          convertedOptions,
+          selector,
+          equalityFnOrDeps,
+          deps
+        )) as UseAtomParamValueApi,
+      // store.getAtom(atomConfig)
+      getAtom: (atomConfig: Atom<any>) =>
+        getAtomWithStore(atomConfig, targetStore, convertedOptions),
+      // store.useSetAtom(atomConfig)
+      useSetAtom: (atomConfig: WritableAtom<any, any, any>) =>
+        useSetAtomWithStore(atomConfig, targetStore, convertedOptions),
+      // store.setAtom(atomConfig, ...args)
+      setAtom: (atomConfig: WritableAtom<any, any, any>) =>
+        setAtomWithStore(atomConfig, targetStore, convertedOptions),
+      // store.useAtomState(atomConfig)
+      useAtomState: (atomConfig: WritableAtom<any, any, any>) =>
+        useAtomStateWithStore(atomConfig, targetStore, convertedOptions),
+      // store.subscribeAtom(atomConfig, callback)
+      subscribeAtom: (atomConfig: Atom<any>) =>
+        subscribeAtomWithStore(atomConfig, targetStore, convertedOptions),
+      store: targetStore,
+    };
+  };
+
   return {
     [providerIndex]: Provider,
     [useStoreIndex]: useStoreApi,
+    [getGetStoreIndex(name)]: getNameStore,
     [storeIndex]: storeApi,
     [`use${capitalizeFirstLetter(name)}State`]: useNameState,
     [`use${capitalizeFirstLetter(name)}Value`]: useNameValue,
