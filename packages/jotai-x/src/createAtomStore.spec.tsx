@@ -142,16 +142,6 @@ describe('createAtomStore', () => {
       );
     };
 
-    const BadSelectorRenderer = () => {
-      const arr0 = useMyTestStoreStore().useArrValue((v) => v[0]);
-      return <div>{arr0}</div>;
-    };
-
-    const BadSelectorRenderer2 = () => {
-      const arr0 = useMyTestStoreValue('arr', { selector: (v) => v[0] });
-      return <div>{arr0}</div>;
-    };
-
     const Buttons = () => {
       const store = useMyTestStoreStore();
       return (
@@ -267,26 +257,6 @@ describe('createAtomStore', () => {
       expect(arrNumRenderWithDepsAndAtomCount).toBe(8);
       expect(getByText('arrNum: ava')).toBeInTheDocument();
       expect(getByText('arrNumWithDeps: ava')).toBeInTheDocument();
-    });
-
-    it('Throw error if user does not memoize selector', () => {
-      expect(() =>
-        render(
-          <MyTestStoreProvider>
-            <BadSelectorRenderer />
-          </MyTestStoreProvider>
-        )
-      ).toThrow();
-    });
-
-    it('Throw error is user does memoize selector 2', () => {
-      expect(() =>
-        render(
-          <MyTestStoreProvider>
-            <BadSelectorRenderer2 />
-          </MyTestStoreProvider>
-        )
-      ).toThrow();
     });
   });
 

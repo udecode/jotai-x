@@ -85,7 +85,6 @@ const { useUserValue, useUserSet, useUserState, UserProvider } =
         // Optional derived atoms
         intro: atom((get) => `My name is ${get(atoms.name)}`),
       }),
-      infiniteRenderDetectionLimit: 100, // Optional render detection limit
     }
   );
 ```
@@ -98,7 +97,6 @@ Available options:
   delay?: number;
   effect?: React.ComponentType;
   extend?: (atoms: Atoms) => DerivedAtoms;
-  infiniteRenderDetectionLimit?: number;
 }
 ```
 
@@ -390,7 +388,7 @@ The store-based atom hooks provide more flexibility when working with external a
 
 ## Troubleshooting
 
-### Infinite Render Detection
+### Infinite Renders
 
 When using value hooks with selectors, ensure they are memoized:
 

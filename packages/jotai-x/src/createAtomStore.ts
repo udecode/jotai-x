@@ -421,7 +421,6 @@ export interface CreateAtomStoreOptions<
   delay?: UseAtomOptions['delay'];
   effect?: React.FC;
   extend?: (atomsWithoutExtend: StoreAtomsWithoutExtend<T>) => E;
-  infiniteRenderDetectionLimit?: number;
   suppressWarnings?: boolean;
 }
 
@@ -448,7 +447,6 @@ export const createAtomStore = <
     delay: delayRoot,
     effect,
     extend,
-    infiniteRenderDetectionLimit = 100_000,
     suppressWarnings,
   }: CreateAtomStoreOptions<T, E, N>
 ): AtomStoreApi<T, E, N> => {
@@ -510,8 +508,6 @@ export const createAtomStore = <
     return store ?? contextStore;
   };
 
-  let renderCount = 0;
-
   const useAtomValueWithStore: UseAtomValueFn = (
     atomConfig,
     store,
@@ -520,25 +516,6 @@ export const createAtomStore = <
     equalityFnOrDeps,
     deps
   ) => {
-    // If selector/equalityFn are not memoized, infinite loop will occur.
-    if (process.env.NODE_ENV !== 'production' && infiniteRenderDetectionLimit) {
-      renderCount += 1;
-      if (renderCount > infiniteRenderDetectionLimit) {
-        throw new Error(
-          `
-use<Key>Value/useValue/use<StoreName>Value has rendered ${infiniteRenderDetectionLimit} times in the same render.
-It is very likely to have fallen into an infinite loop.
-That is because you do not memoize the selector/equalityFn function param.
-Please wrap them with useCallback or configure the deps array correctly.`
-        );
-      }
-      // We need to use setTimeout instead of useEffect here, because when infinite loop happens,
-      // the effect (fired in the next micro task) will execute before the rerender.
-      setTimeout(() => {
-        renderCount = 0;
-      });
-    }
-
     const options = convertScopeShorthand(optionsOrScope);
     const equalityFn =
       typeof equalityFnOrDeps === 'function' ? equalityFnOrDeps : undefined;
