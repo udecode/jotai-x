@@ -1,5 +1,13 @@
 # jotai-x
 
+## 2.3.3
+
+### Patch Changes
+
+- [#33](https://github.com/udecode/jotai-x/pull/33) by [@12joan](https://github.com/12joan) – Improve performance of `useStoreApi` by simplifying object creation
+
+- [#34](https://github.com/udecode/jotai-x/pull/34) by [@12joan](https://github.com/12joan) – PERF: Remove infinite render detection (causing performance issues in development)
+
 ## 2.3.2
 
 ### Patch Changes
