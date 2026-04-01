@@ -7,6 +7,7 @@
   "scripts": {
     "build": "yarn g:build",
     "build:watch": "ROARR_LOG=true turbowatch ./config/turbowatch.config.ts | roarr",
+    "bench": "yarn g:bench",
     "brl": "yarn g:brl",
     "check:install": "yarn dlx @yarnpkg/doctor@4.0.0-rc.10 --configFileName config/.ncurc.yml packages",
     "clean:turbo": "rimraf --glob '**/.turbo' '**/turbo-*.log' && turbo daemon clean",
@@ -22,6 +23,7 @@
     "g:brl": "turbo --filter \"./packages/**\" brl --no-daemon",
     "g:build": "turbo --filter \"./packages/**\" build --no-daemon",
     "g:build:watch": "yarn build:watch",
+    "g:bench": "turbo --filter \"./packages/**\" bench --no-daemon",
     "g:changeset": "changeset",
     "g:clean": "yarn clean:turbo && turbo --filter \"./packages/**\" clean --no-daemon",
     "g:lint": "turbo --filter \"./packages/**\" lint --no-daemon",

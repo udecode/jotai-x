@@ -28,6 +28,7 @@
     }
   },
   "scripts": {
+    "bench": "yarn build && node ./scripts/bench-store-alternatives.cjs",
     "build": "yarn p:build",
     "build:watch": "yarn p:build:watch",
     "brl": "yarn p:brl",

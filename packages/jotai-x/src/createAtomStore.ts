@@ -60,6 +60,7 @@ export type UseSyncAtoms<T> = (
   values: Partial<Record<keyof T, any>>,
   options?: {
     store?: JotaiStore;
+    skipInitialValues?: Partial<Record<keyof T, any>>;
   }
 ) => void;
 
@@ -401,15 +402,6 @@ const convertScopeShorthand = (
     ? { scope: optionsOrScope }
     : optionsOrScope;
 
-const useConvertScopeShorthand: typeof convertScopeShorthand = (
-  optionsOrScope
-) => {
-  const convertedOptions = convertScopeShorthand(optionsOrScope);
-  // Works because all values are primitives
-  // eslint-disable-next-line react-compiler/react-compiler
-  return useMemo(() => convertedOptions, Object.values(convertedOptions));
-};
-
 const identity = (x: any) => x;
 
 export interface CreateAtomStoreOptions<
@@ -519,6 +511,14 @@ export const createAtomStore = <
     const options = convertScopeShorthand(optionsOrScope);
     const equalityFn =
       typeof equalityFnOrDeps === 'function' ? equalityFnOrDeps : undefined;
+
+    if (selector === identity && !equalityFn) {
+      return useAtomValue(atomConfig, {
+        store,
+        delay: options.delay ?? delayRoot,
+      });
+    }
+
     deps = (typeof equalityFnOrDeps === 'function'
       ? deps
       : equalityFnOrDeps) ?? [selector, equalityFn];
@@ -529,11 +529,15 @@ export const createAtomStore = <
       deps
     );
 
-    const selectorAtom = selectAtom(
-      atomConfig,
-      memoizedSelector,
-      memoizedEqualityFn
-    ) as Atom<any>;
+    const selectorAtom = React.useMemo(
+      () =>
+        selectAtom(
+          atomConfig,
+          memoizedSelector,
+          memoizedEqualityFn
+        ) as Atom<any>,
+      [atomConfig, memoizedSelector, memoizedEqualityFn]
+    );
     return useAtomValue(selectorAtom, {
       store,
       delay: options.delay ?? delayRoot,
@@ -704,12 +708,17 @@ export const createAtomStore = <
   };
 
   const useStoreApi: UseStoreApi<T, E> = (options = {}) => {
-    const convertedOptions = useConvertScopeShorthand(options);
+    const convertedOptions = convertScopeShorthand(options);
     const store = useStore(convertedOptions);
-
     return useMemo(
       () => new (UseStoreApiFactory as any)(convertedOptions, store),
-      [store, convertedOptions]
+      [
+        store,
+        convertedOptions.delay,
+        convertedOptions.scope,
+        convertedOptions.store,
+        convertedOptions.warnIfNoStore,
+      ]
     );
   };
 
