@@ -61,11 +61,14 @@ export const HydrateAtoms = <T extends object>({
 }: Omit<ProviderProps<T>, 'scope'> & {
   atoms: SimpleWritableAtomRecord<T>;
 }) => {
-  useHydrateStore(atoms, { ...initialValues, ...props } as any, {
+  const hydratedValues = { ...initialValues, ...props } as any;
+
+  useHydrateStore(atoms, hydratedValues, {
     store,
   });
   useSyncStore(atoms, props as any, {
     store,
+    skipInitialValues: props as any,
   });
 
   return <>{children}</>;
@@ -85,14 +88,16 @@ export const createAtomProvider = <T extends object, N extends string = ''>(
 
   // eslint-disable-next-line react/display-name
   return ({ store, scope, children, resetKey, ...props }: ProviderProps<T>) => {
-    const [storeState, setStoreState] =
-      React.useState<JotaiStore>(createStore());
+    const [storeState, setStoreState] = React.useState<JotaiStore>(
+      () => store ?? createStore()
+    );
+    const resolvedStore = store ?? storeState;
 
     React.useEffect(() => {
-      if (resetKey) {
+      if (!store && resetKey) {
         setStoreState(createStore());
       }
-    }, [resetKey]);
+    }, [resetKey, store]);
 
     const previousStoreContext = React.useContext(AtomStoreContext);
 
@@ -103,22 +108,22 @@ export const createAtomProvider = <T extends object, N extends string = ''>(
         // Make the store findable by its fully qualified scope
         newStoreContext.set(
           getFullyQualifiedScope(storeScope, scope),
-          storeState
+          resolvedStore
         );
       }
 
       // Make the store findable by its store name alone
       newStoreContext.set(
         getFullyQualifiedScope(storeScope, PROVIDER_SCOPE),
-        storeState
+        resolvedStore
       );
 
       return newStoreContext;
-    }, [previousStoreContext, scope, storeState]);
+    }, [previousStoreContext, resolvedStore, scope]);
 
     return (
       <AtomStoreContext.Provider value={storeContext}>
-        <HydrateAtoms store={storeState} atoms={atoms} {...(props as any)}>
+        <HydrateAtoms store={resolvedStore} atoms={atoms} {...(props as any)}>
           {!!Effect && <Effect />}
 
           {children}

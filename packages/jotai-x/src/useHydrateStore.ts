@@ -1,8 +1,9 @@
 import React from 'react';
-import { useSetAtom } from 'jotai';
+import { atom, useSetAtom } from 'jotai';
 import { useHydrateAtoms } from 'jotai/utils';
 
 import {
+  SimpleWritableAtom,
   SimpleWritableAtomRecord,
   UseHydrateAtoms,
   UseSyncAtoms,
@@ -16,15 +17,19 @@ export const useHydrateStore = (
   initialValues: Parameters<UseHydrateAtoms<any>>[0],
   options: Parameters<UseHydrateAtoms<any>>[1] = {}
 ) => {
-  const values: any[] = [];
+  const values = React.useMemo(() => {
+    const nextValues: any[] = [];
 
-  for (const key of Object.keys(atoms)) {
-    const initialValue = initialValues[key];
+    for (const key of Object.keys(atoms)) {
+      const initialValue = initialValues[key];
 
-    if (initialValue !== undefined) {
-      values.push([atoms[key], initialValue]);
+      if (initialValue !== undefined) {
+        nextValues.push([atoms[key], initialValue]);
+      }
     }
-  }
+
+    return nextValues;
+  }, [atoms, initialValues]);
 
   useHydrateAtoms(values, options);
 };
@@ -35,20 +40,49 @@ export const useHydrateStore = (
 export const useSyncStore = (
   atoms: SimpleWritableAtomRecord<any>,
   values: any,
-  { store }: Parameters<UseSyncAtoms<any>>[1] = {}
+  {
+    skipInitialValues,
+    store: storeOption,
+  }: Parameters<UseSyncAtoms<any>>[1] = {}
 ) => {
-  for (const key of Object.keys(atoms)) {
-    const value = values[key];
-    const atom = atoms[key];
+  const atomEntries = React.useMemo(
+    () => Object.entries(atoms) as [string, SimpleWritableAtom<any>][],
+    [atoms]
+  );
+  const syncAtom = React.useMemo(
+    () =>
+      atom(
+        null,
+        (
+          _get,
+          set,
+          nextValues: { previousValues?: any; values: typeof values }
+        ) => {
+          const previousValues = nextValues.previousValues;
 
-    // eslint-disable-next-line react-compiler/react-compiler
-    const set = useSetAtom(atom, { store });
+          for (const [key, writableAtom] of atomEntries) {
+            const value = nextValues.values[key];
 
-    // eslint-disable-next-line react-compiler/react-compiler
-    React.useEffect(() => {
-      if (value !== undefined && value !== null) {
-        set(value);
-      }
-    }, [set, value]);
-  }
+            if (value === undefined || value === null) continue;
+            if (previousValues && Object.is(previousValues[key], value)) {
+              continue;
+            }
+
+            set(writableAtom, value);
+          }
+        }
+      ),
+    [atomEntries]
+  );
+  const syncValues = useSetAtom(syncAtom, { store: storeOption });
+  const previousValuesRef = React.useRef(skipInitialValues);
+
+  React.useEffect(() => {
+    syncValues({
+      previousValues: previousValuesRef.current,
+      values,
+    });
+
+    previousValuesRef.current = values;
+  }, [syncValues, values]);
 };
