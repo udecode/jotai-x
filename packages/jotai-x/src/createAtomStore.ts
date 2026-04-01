@@ -511,14 +511,6 @@ export const createAtomStore = <
     const options = convertScopeShorthand(optionsOrScope);
     const equalityFn =
       typeof equalityFnOrDeps === 'function' ? equalityFnOrDeps : undefined;
-
-    if (selector === identity && !equalityFn) {
-      return useAtomValue(atomConfig, {
-        store,
-        delay: options.delay ?? delayRoot,
-      });
-    }
-
     deps = (typeof equalityFnOrDeps === 'function'
       ? deps
       : equalityFnOrDeps) ?? [selector, equalityFn];
@@ -531,11 +523,13 @@ export const createAtomStore = <
 
     const selectorAtom = React.useMemo(
       () =>
-        selectAtom(
-          atomConfig,
-          memoizedSelector,
-          memoizedEqualityFn
-        ) as Atom<any>,
+        memoizedSelector === identity && !memoizedEqualityFn
+          ? atomConfig
+          : (selectAtom(
+              atomConfig,
+              memoizedSelector,
+              memoizedEqualityFn
+            ) as Atom<any>),
       [atomConfig, memoizedSelector, memoizedEqualityFn]
     );
     return useAtomValue(selectorAtom, {
