@@ -1,5 +1,11 @@
 # jotai-x
 
+## 2.3.4
+
+### Patch Changes
+
+- [#38](https://github.com/udecode/jotai-x/pull/38) by [@zbeyens](https://github.com/zbeyens) – Improve `createAtomStore` value and selector read performance in large store-driven trees
+
 ## 2.3.3
 
 ### Patch Changes
