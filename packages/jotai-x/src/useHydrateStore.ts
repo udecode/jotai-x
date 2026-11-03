@@ -9,6 +9,9 @@ import {
   UseSyncAtoms,
 } from './createAtomStore';
 
+const useIsomorphicLayoutEffect =
+  typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect;
+
 /**
  * Hydrate atoms with initial values for SSR.
  */
@@ -77,7 +80,7 @@ export const useSyncStore = (
   const syncValues = useSetAtom(syncAtom, { store: storeOption });
   const previousValuesRef = React.useRef(skipInitialValues);
 
-  React.useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     syncValues({
       previousValues: previousValuesRef.current,
       values,
