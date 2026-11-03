@@ -1,0 +1,15 @@
+{
+  "name": "jotai-x-native-input-repro",
+  "private": true,
+  "scripts": {
+    "test": "node probe.cjs"
+  },
+  "dependencies": {
+    "@playwright/test": "1.61.1",
+    "esbuild": "0.28.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "jotai": "3.0.1",
+    "jotai-x": "2.3.4"
+  }
+}

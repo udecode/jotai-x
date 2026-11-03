@@ -176,6 +176,34 @@ describe('ElementProvider', () => {
     expect(getByText('Type: name')).toBeInTheDocument();
   });
 
+  it('synchronizes updated provider props before consumer passive effects', () => {
+    const observed = new Map<number, TElement>();
+    const Consumer = ({ revision }: { revision: number }) => {
+      const store = useElementStore('name');
+
+      React.useEffect(() => {
+        observed.set(revision, store.getElement());
+      }, [revision, store]);
+
+      return null;
+    };
+    const first = makeNameElement('John');
+    const second = makeNameElement('Jane');
+    const { rerender } = render(
+      <ElementProvider element={first} scope="name">
+        <Consumer revision={1} />
+      </ElementProvider>
+    );
+
+    rerender(
+      <ElementProvider element={second} scope="name">
+        <Consumer revision={2} />
+      </ElementProvider>
+    );
+
+    expect(observed.get(2)).toBe(second);
+  });
+
   it('propagates updated elements to consumers', () => {
     const { getByText } = render(
       <UpdatingAgeElementProvider
